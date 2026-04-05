@@ -1,0 +1,30 @@
+# stratum.toml.example — copy to ~/.stratum/stratum.toml and edit as needed
+
+[scan]
+# Directories to scan for duplicates and archive candidates (required)
+watch_dirs = [
+    "~/Documents",
+    "~/Downloads",
+]
+
+# Glob patterns to exclude (matched against filename only, not full path)
+exclude_patterns = [".DS_Store", "*.tmp", ".git"]
+
+# Minimum file size to consider, in megabytes
+min_file_size_mb = 0.1
+
+# Maximum directory traversal depth
+max_depth = 20
+
+[suggestions]
+# Path to the JSONL suggestion log
+log_path = "~/.stratum/suggestions.jsonl"
+
+# Emit DELETE_DUPLICATE suggestions when identical files are found
+dedup_enabled = true
+
+# Files not accessed within this many days are candidates for archiving
+archive_days = 365
+
+# Emit REORGANIZE suggestions for misplaced files
+reorganize = true
