@@ -19,20 +19,21 @@ jobs:
         run: pip install poetry
       - name: Run lint
         run: tox -e lint
-  # TODO add these checks when the tests exist
-  # unit-tests:
-  #   name: Unit Tests
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: "3.13"
-  #     - name: Install poetry and tox
-  #       run: pip install poetry tox
-  #     - name: Run unit tests
-  #       run: tox -e unit
 
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install poetry and tox
+        run: pip install poetry tox
+      - name: Run unit tests
+        run: tox -e unit
+
+  # TODO add these checks when the tests exist
   # integration-tests:
   #   name: Integration Tests
   #   runs-on: ubuntu-latest
