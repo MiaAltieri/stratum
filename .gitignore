@@ -1,0 +1,33 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual environments ---
+.venv/
+venv/
+
+# --- Poetry & build ---
+.poetry/
+*.egg-info/
+dist/
+build/
+.installed.cfg
+
+# --- Tox ---
+.tox/
+
+# --- Tests & coverage ---
+.pytest_cache/
+.coverage
+.coverage.*
+.mypy_cache/
+ruff_cache/
+htmlcov/
+
+# --- Editors ---
+.vscode/
+.idea/
+
+# --- macOS ---
+.DS_Store
