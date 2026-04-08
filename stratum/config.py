@@ -1,1 +1,49 @@
 """Configuration loader for Stratum — reads and validates stratum.toml."""
+
+import tomllib
+from pathlib import Path
+from typing import List
+
+from pydantic import BaseModel, field_validator
+
+from stratum.exceptions import DirNotFoundException
+
+
+class ScanConfig(BaseModel):
+    """ScanConfig describes the settings that control how the file scanner behaves."""
+
+    watch_dirs: List[Path]
+    exclude_patterns: List[str] = [".DS_Store", "*.tmp", ".git"]
+    min_file_size_mb: float = 0.1
+    max_depth: int = 20
+
+    @field_validator("watch_dirs", mode="after")
+    @classmethod
+    def validate_dirs_existence(cls, value: List[Path]) -> List[Path]:
+        for dir_name in value:
+            if not dir_name.is_dir():
+                raise DirNotFoundException(dir_name)
+        return value
+
+
+class SuggestionsConfig(BaseModel):
+    """Default settings for suggestion logger."""
+
+    log_path: Path = Path("~/.stratum/suggestions.jsonl")
+    dedup_enabled: bool = True
+    archive_days: int = 365
+    reorganize: bool = True
+
+
+class StratumConfig(BaseModel):
+    """Top level config obeject."""
+
+    scan: ScanConfig
+    suggestions: SuggestionsConfig = SuggestionsConfig()
+
+
+def load(path: Path = Path("~/.stratum/stratum.toml")) -> StratumConfig:
+    resolved = path.expanduser()
+    with resolved.open("rb") as f:
+        data = tomllib.load(f)
+    return StratumConfig.model_validate(data)

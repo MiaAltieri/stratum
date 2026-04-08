@@ -1,0 +1,36 @@
+[scan]
+watch_dirs       = ["/Users/you/Documents", "/Users/you/Downloads"]
+exclude_patterns = [".DS_Store", "*.tmp", "node_modules", ".git"]
+min_file_size_mb = 0.1
+max_depth        = 20
+
+[pipeline]
+scan_workers     = 4          # ProcessPoolExecutor (CPU-bound hashing)
+upload_workers   = 8          # ThreadPoolExecutor  (I/O-bound S3 puts)
+queue_maxsize    = 500        # Back-pressure: pause scanner when full
+
+[upload]
+mode             = "metadata_only"   # Options: metadata_only | full_content
+# mode = "full_content"              # Uncomment when bandwidth allows
+
+[aws]
+profile          = "default"
+region           = "us-east-1"
+bucket           = "my-stratum-archive"
+prefix           = "stratum/"
+
+[tiers]
+# Lifecycle transitions applied to stratum/meta/ prefix
+ia_days          = 30
+glacier_days     = 90
+
+[suggestions]
+log_path         = "~/.stratum/suggestions.jsonl"
+dedup_threshold  = true       # Log duplicate files as DELETE_DUPLICATE
+archive_days     = 365        # Log unaccessed files as ARCHIVE_CANDIDATE
+reorganize       = true       # Log misplaced files as REORGANIZE
+
+[service]
+scan_interval_seconds = 3600
+log_path         = "~/.stratum/stratum.log"
+log_level        = "INFO"
