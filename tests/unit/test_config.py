@@ -55,13 +55,13 @@ class TestScanConfig:
         d = tmp_path / "d"
         d.mkdir()
         cfg = ScanConfig(watch_dirs=[d])
-        assert cfg.exclude_patterns == [".DS_Store", "*.tmp", ".git"]
+        assert cfg.exclude_patterns == ["DS_Store", "tmp", "git"]
 
     def test_custom_exclude_patterns(self, tmp_path):
         d = tmp_path / "d"
         d.mkdir()
         cfg = ScanConfig(watch_dirs=[d], exclude_patterns=["*.log"])
-        assert cfg.exclude_patterns == ["*.log"]
+        assert cfg.exclude_patterns == ["log"]
 
     def test_default_min_file_size_mb(self, tmp_path):
         d = tmp_path / "d"
@@ -160,7 +160,7 @@ class TestLoad:
             """,
         )
         cfg = load(toml_path)
-        assert cfg.scan.exclude_patterns == [".DS_Store", "*.tmp", ".git"]
+        assert cfg.scan.exclude_patterns == ["DS_Store", "tmp", "git"]
         assert cfg.scan.min_file_size_mb == pytest.approx(0.1)
         assert cfg.scan.max_depth == 20
 

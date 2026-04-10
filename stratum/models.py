@@ -39,8 +39,8 @@ class FileRecord(BaseModel):
     atime: datetime
     content_hash: str | None = None  # set by hasher
     file_type: FileType = FileType.OTHER  # set by tagger
-    is_duplicate: bool = False
-    duplicate_of: Path | None = None
+    is_duplicate: bool = False  # set downstream in ?scan? module
+    duplicate_of: Path | None = None  # set downstream in ?scan? module
 
     @computed_field  # type: ignore[misc]
     @property
