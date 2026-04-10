@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 def scan(config: ScanConfig) -> Iterator[FileRecord]:
-    print(config.max_depth)
     for dir in config.watch_dirs:
         yield from _walk(dir, config, depth=0)
 
