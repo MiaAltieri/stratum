@@ -12,6 +12,8 @@ from stratum.models import FileRecord
 
 logger = logging.getLogger(__name__)
 
+ONE_MB = 1024**2
+
 
 def scan(config: ScanConfig) -> Iterator[FileRecord]:
     for dir in config.watch_dirs:
@@ -48,7 +50,7 @@ def _make_record(entry: DirEntry, config: ScanConfig) -> FileRecord | None:
         if suffix in config.exclude_patterns:
             return
 
-        size_mb = entry.stat().st_size / (1024**2)
+        size_mb = entry.stat().st_size / ONE_MB
         if size_mb < config.min_file_size_mb:
             return
 
