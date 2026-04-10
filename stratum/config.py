@@ -13,7 +13,7 @@ class ScanConfig(BaseModel):
     """ScanConfig describes the settings that control how the file scanner behaves."""
 
     watch_dirs: List[Path]
-    exclude_patterns: List[str] = [".DS_Store", "*.tmp", ".git"]
+    exclude_patterns: List[str] = ["DS_Store", "tmp", "git"]
     min_file_size_mb: float = 0.1
     max_depth: int = 20
 
@@ -24,6 +24,18 @@ class ScanConfig(BaseModel):
             if not dir_name.is_dir():
                 raise DirNotFoundException(dir_name)
         return value
+
+    @field_validator("exclude_patterns", mode="before")
+    @classmethod
+    def normalise_extensions(cls, values: List[str]) -> List[str]:
+        normalised = []
+        for val in values:
+            # Strip leading "*.", ".", or "*" then take the extension part
+            # we must `lstrip` because we could have .tar.gz and we will want the full ext
+            ext = val.lstrip("*").lstrip(".")
+            normalised.append(ext)
+
+        return normalised
 
 
 class SuggestionsConfig(BaseModel):
