@@ -1,6 +1,5 @@
 """File type classifier — maps file extensions to FileType enum values."""
 
-from pathlib import Path
 from stratum.models import FileType
 
 
