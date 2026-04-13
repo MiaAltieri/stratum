@@ -307,6 +307,11 @@ class TestFileRecordFields:
         results = list(scan(make_config([tmp_path])))
         assert results[0].duplicate_of is None
 
+    def test_ext_for_tar_gz_is_tar_gz(self, tmp_path):
+        (tmp_path / "archive.tar.gz").write_bytes(b"x")
+        results = list(scan(make_config([tmp_path])))
+        assert results[0].ext == "tar.gz"
+
 
 # ---------------------------------------------------------------------------
 # No file is opened for reading
