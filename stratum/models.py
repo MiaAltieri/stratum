@@ -37,6 +37,7 @@ class FileRecord(BaseModel):
     size_bytes: int
     mtime: datetime
     atime: datetime
+    ext: str | None = None  # set by scanner
     content_hash: str | None = None  # set by hasher
     file_type: FileType = FileType.OTHER  # set by tagger
     is_duplicate: bool = False  # set downstream in ?scan? module

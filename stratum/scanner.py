@@ -45,8 +45,9 @@ def _make_record(entry: DirEntry, config: ScanConfig) -> FileRecord | None:
     # info for free unlike a `Path` object, where as calling `.stat` on a Path obj requires an
     # extra call ?each time?
     try:
-        # sanity check that we should actually make a record of this object
-        suffix = entry.name.split(".")[1]
+        # sanity check that we should actually make a record of this object, note we use lstrip
+        # to handly files like .tar.gz, where we want `tar.gz`
+        suffix = entry.name.split(".", 1)[1]
         if suffix in config.exclude_patterns:
             return
 
@@ -56,6 +57,7 @@ def _make_record(entry: DirEntry, config: ScanConfig) -> FileRecord | None:
 
         return FileRecord(
             path=Path(entry.path),
+            ext=suffix,
             size_bytes=entry.stat().st_size,
             mtime=datetime.fromtimestamp(entry.stat().st_mtime, tz=timezone.utc),
             atime=datetime.fromtimestamp(entry.stat().st_atime, tz=timezone.utc),

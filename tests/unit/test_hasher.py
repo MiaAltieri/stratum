@@ -1,7 +1,6 @@
 """Unit tests for stratum.hasher — SHA-256 file content hasher (STRAT-105)."""
 
 import hashlib
-from pathlib import Path
 
 import pytest
 
