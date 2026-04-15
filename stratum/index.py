@@ -1,5 +1,6 @@
 """Dedup index — persists content hashes in a local SQLite database."""
 
+import logging
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,6 +11,9 @@ CREATE TABLE IF NOT EXISTS hashes (
     path       TEXT NOT NULL,
     indexed_at TEXT NOT NULL
 );"""
+
+
+logger = logging.getLogger(__name__)
 
 
 class StratumIndex:
@@ -24,9 +28,9 @@ class StratumIndex:
             self._conn.execute(_DDL)
             self._conn.commit()
             return self
-        except Exception:
-            if self._conn:
-                self._conn.close()  # don't leak connections on failures
+        except Exception as e:
+            logger.error("Exception with sqlite connection:", e)
+            self.__exit__()
             raise
 
     def __exit__(self, *_) -> None:
