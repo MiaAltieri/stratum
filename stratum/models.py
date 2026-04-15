@@ -63,3 +63,14 @@ class SuggestionEntry(BaseModel):
     reason: str
     size_bytes: int
     extra: dict[str, str] = {}
+
+    @classmethod
+    def for_duplicate(cls, record: FileRecord, original_path: Path) -> SuggestionEntry:
+        return cls(
+            ts=datetime.now(),
+            action=SuggestionAction.DELETE_DUPLICATE,
+            path=str(record.path),
+            reason=f"Duplicate of {original_path} (sha256: {record.content_hash})",
+            size_bytes=record.size_bytes,
+            extra={"original_path": str(original_path)},
+        )
