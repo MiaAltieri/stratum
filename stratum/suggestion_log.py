@@ -1,9 +1,9 @@
 """Suggestion logger — appends advisory SuggestionEntry records to a JSONL file."""
 
 import logging
-from stratum.models import SuggestionEntry
 from pathlib import Path
 
+from stratum.models import SuggestionEntry
 
 logger = logging.getLogger(__name__)
 SUGGESTION_FILE_NAME = "suggestions.jsonl"

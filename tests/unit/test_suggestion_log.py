@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from stratum.models import FileRecord, FileType, SuggestionAction, SuggestionEntry
+from stratum.models import FileRecord, SuggestionAction, SuggestionEntry
 from stratum.suggestion_log import CalledOutsideContextManager, SuggestionLogger
 
 SUGGESTION_FILE_NAME = "suggestions.jsonl"

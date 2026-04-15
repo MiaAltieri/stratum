@@ -1,10 +1,9 @@
 """Dedup index — persists content hashes in a local SQLite database."""
 
+import logging
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-import logging
-
 
 _DDL = """
 CREATE TABLE IF NOT EXISTS hashes (
@@ -40,9 +39,7 @@ class StratumIndex:
 
     def contains(self, content_hash: str) -> str | None:
         """Return the original path if hash is known, else None."""
-        cursor = self._conn.execute(
-            "SELECT path FROM hashes WHERE hash = ?", (content_hash,)
-        )
+        cursor = self._conn.execute("SELECT path FROM hashes WHERE hash = ?", (content_hash,))
         row = cursor.fetchone()
         if row:
             return row[0]
