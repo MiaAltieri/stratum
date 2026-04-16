@@ -1,20 +1,19 @@
 """Main orchestrator and CLI entry point for Stratum."""
 
-from stratum.models import ScanMetadata, SuggestionAction, SuggestionEntry
-from stratum.hasher import hash_file
-from stratum.scanner import scan
-from stratum.tagger import classify
-from stratum.config import load
-from stratum.index import StratumIndex
-from stratum.suggestion_log import SuggestionLogger
-
-from datetime import datetime, timezone
-from pathlib import Path
-import os
-import time
 import argparse
 import logging
+import os
+import time
+from datetime import datetime, timezone
+from pathlib import Path
 
+from stratum.config import load
+from stratum.hasher import hash_file
+from stratum.index import StratumIndex
+from stratum.models import ScanMetadata, SuggestionAction, SuggestionEntry
+from stratum.scanner import scan
+from stratum.suggestion_log import SuggestionLogger
+from stratum.tagger import classify
 
 PID_FILE_NAME = "stratum.pid"
 
@@ -31,9 +30,7 @@ def run() -> None:
 
     Future PR: handle DirNotFoundException gracefully.
     """
-    logging.basicConfig(
-        level=logging.DEBUG, format="%(levelname)s %(name)s: %(message)s"
-    )
+    logging.basicConfig(level=logging.DEBUG, format="%(levelname)s %(name)s: %(message)s")
     logger.info("BEGINNING STRATUM")
     args = _parse_args()
     config = load(args.config_path)
