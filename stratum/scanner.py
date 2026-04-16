@@ -47,7 +47,8 @@ def _make_record(entry: DirEntry, config: ScanConfig) -> FileRecord | None:
     try:
         # sanity check that we should actually make a record of this object, note we use lstrip
         # to handly files like .tar.gz, where we want `tar.gz`
-        suffix = entry.name.split(".", 1)[1]
+        parts = entry.name.split(".", 1)
+        suffix = parts[1] if len(parts) > 1 else ""
         if suffix in config.exclude_patterns:
             return
 

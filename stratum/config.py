@@ -1,12 +1,16 @@
 """Configuration loader for Stratum — reads and validates stratum.toml."""
 
 import tomllib
+import logging
+
 from pathlib import Path
 from typing import List
 
 from pydantic import BaseModel, field_validator
 
 from stratum.exceptions import DirNotFoundException
+
+logger = logging.getLogger(__name__)
 
 
 class ScanConfig(BaseModel):
@@ -19,9 +23,19 @@ class ScanConfig(BaseModel):
 
     @field_validator("watch_dirs", mode="after")
     @classmethod
+    def normalise_dirs(cls, values: List[Path]) -> List[Path]:
+        normalised = []
+        for val in values:
+            normalised.append(val.expanduser())
+
+        return normalised
+
+    @field_validator("watch_dirs", mode="after")
+    @classmethod
     def validate_dirs_existence(cls, value: List[Path]) -> List[Path]:
         for dir_name in value:
             if not dir_name.is_dir():
+                logger.error("Did not find directory: %s", dir_name)
                 raise DirNotFoundException(dir_name)
         return value
 
