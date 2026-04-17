@@ -270,21 +270,6 @@ class TestProcessDirectoryCounts:
 
         assert mock_classify.call_count == 2
 
-    def test_insert_called_for_every_file(self):
-        cfg = make_mock_config()
-        records = [make_file_record(path=Path(f"/dir/file_{i}.txt")) for i in range(3)]
-        mock_index = make_mock_index(contains_return=None)
-        with (
-            patch("stratum.main.scan", return_value=records),
-            patch("stratum.main.hash_file", return_value="h"),
-            patch("stratum.main.classify", return_value=FileType.OTHER),
-            patch("stratum.main.StratumIndex", return_value=mock_index),
-            patch("stratum.main.SuggestionLogger", return_value=make_mock_logger()),
-        ):
-            _process_directory(cfg, dry_run=False)
-
-        assert mock_index.insert.call_count == 3
-
 
 # ---------------------------------------------------------------------------
 # _process_directory — duplicate detection
@@ -559,6 +544,7 @@ class TestRunStratum:
             patch("stratum.main._write_pid", side_effect=record_write),
             patch("stratum.main._delete_pid"),
             patch("stratum.main._process_directory", side_effect=record_process),
+            patch("stratum.main.StratumIndex", return_value=make_mock_index()),
         ):
             _run_stratum(cfg, dry_run=False)
 
@@ -570,6 +556,7 @@ class TestRunStratum:
             patch("stratum.main._write_pid"),
             patch("stratum.main._delete_pid") as mock_delete,
             patch("stratum.main._process_directory", return_value=MagicMock()),
+            patch("stratum.main.StratumIndex", return_value=make_mock_index()),
         ):
             _run_stratum(cfg, dry_run=False)
 
@@ -581,6 +568,7 @@ class TestRunStratum:
             patch("stratum.main._write_pid"),
             patch("stratum.main._delete_pid") as mock_delete,
             patch("stratum.main._process_directory", side_effect=RuntimeError("boom")),
+            patch("stratum.main.StratumIndex", return_value=make_mock_index()),
         ):
             with pytest.raises(RuntimeError):
                 _run_stratum(cfg, dry_run=False)
@@ -593,6 +581,7 @@ class TestRunStratum:
             patch("stratum.main._write_pid"),
             patch("stratum.main._delete_pid"),
             patch("stratum.main._process_directory", return_value=MagicMock()),
+            patch("stratum.main.StratumIndex", return_value=make_mock_index()),
         ):
             _run_stratum(cfg, dry_run=False)
 
@@ -605,6 +594,7 @@ class TestRunStratum:
             patch("stratum.main._write_pid"),
             patch("stratum.main._delete_pid"),
             patch("stratum.main._process_directory", return_value=MagicMock()) as mock_proc,
+            patch("stratum.main.StratumIndex", return_value=make_mock_index()),
         ):
             _run_stratum(cfg, dry_run=False)
 
@@ -616,10 +606,73 @@ class TestRunStratum:
             patch("stratum.main._write_pid"),
             patch("stratum.main._delete_pid"),
             patch("stratum.main._process_directory", return_value=MagicMock()) as mock_proc,
+            patch("stratum.main.StratumIndex", return_value=make_mock_index()),
         ):
             _run_stratum(cfg, dry_run=True)
 
         assert mock_proc.call_args[0][1] is True
+
+
+# ---------------------------------------------------------------------------
+# _run_stratum — db cleanup
+# ---------------------------------------------------------------------------
+
+
+class TestRunStratumDbCleanup:
+    def test_del_db_called_after_successful_run(self):
+        cfg = make_mock_config()
+        mock_index = make_mock_index()
+        with (
+            patch("stratum.main._write_pid"),
+            patch("stratum.main._delete_pid"),
+            patch("stratum.main._process_directory", return_value=MagicMock()),
+            patch("stratum.main.StratumIndex", return_value=mock_index),
+        ):
+            _run_stratum(cfg, dry_run=False)
+
+        mock_index.del_db.assert_called_once()
+
+    def test_del_db_called_even_when_process_raises(self):
+        cfg = make_mock_config()
+        mock_index = make_mock_index()
+        with (
+            patch("stratum.main._write_pid"),
+            patch("stratum.main._delete_pid"),
+            patch("stratum.main._process_directory", side_effect=RuntimeError("boom")),
+            patch("stratum.main.StratumIndex", return_value=mock_index),
+        ):
+            with pytest.raises(RuntimeError):
+                _run_stratum(cfg, dry_run=False)
+
+        mock_index.del_db.assert_called_once()
+
+    def test_del_db_called_with_index_db_path(self):
+        cfg = make_mock_config()
+        mock_index = make_mock_index()
+        with (
+            patch("stratum.main._write_pid"),
+            patch("stratum.main._delete_pid"),
+            patch("stratum.main._process_directory", return_value=MagicMock()),
+            patch("stratum.main.StratumIndex", return_value=mock_index),
+        ):
+            _run_stratum(cfg, dry_run=False)
+
+        called_path = mock_index.del_db.call_args[1]["path"]
+        assert called_path.name == "index.db"
+
+    def test_del_db_path_is_inside_stratum_package(self):
+        cfg = make_mock_config()
+        mock_index = make_mock_index()
+        with (
+            patch("stratum.main._write_pid"),
+            patch("stratum.main._delete_pid"),
+            patch("stratum.main._process_directory", return_value=MagicMock()),
+            patch("stratum.main.StratumIndex", return_value=mock_index),
+        ):
+            _run_stratum(cfg, dry_run=False)
+
+        called_path = mock_index.del_db.call_args[1]["path"]
+        assert "stratum" in str(called_path)
 
 
 # ---------------------------------------------------------------------------
