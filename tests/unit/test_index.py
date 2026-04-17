@@ -4,7 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from stratum.index import StratumIndex
+from stratum.index import (
+    DeletionPathIncorrectException,
+    PathRequiredToDeleteDBException,
+    StratumIndex,
+)
 
 # ---------------------------------------------------------------------------
 # Context manager behaviour
@@ -196,3 +200,83 @@ class TestParameterisedQueries:
         # The hashes table must still exist and return the original entry
         with StratumIndex(db_path=db) as idx:
             assert idx.contains(h) == str(p)
+
+
+# ---------------------------------------------------------------------------
+# del_db() — happy path
+# ---------------------------------------------------------------------------
+
+
+class TestDelDbSuccess:
+    def test_del_db_removes_the_file(self, tmp_path):
+        db = tmp_path / "index.db"
+        with StratumIndex(db_path=db) as idx:
+            assert db.exists()
+            idx.del_db(path=db)
+        assert not db.exists()
+
+    def test_del_db_accepts_matching_path(self, tmp_path):
+        db = tmp_path / "index.db"
+        with StratumIndex(db_path=db) as idx:
+            idx.del_db(path=db)  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# del_db() — PathRequiredToDeleteDBException
+# ---------------------------------------------------------------------------
+
+
+class TestDelDbNoPath:
+    def test_raises_when_path_is_none(self, tmp_path):
+        db = tmp_path / "index.db"
+        with StratumIndex(db_path=db) as idx:
+            with pytest.raises(PathRequiredToDeleteDBException):
+                idx.del_db(path=None)
+
+    def test_raises_when_path_is_empty_string(self, tmp_path):
+        db = tmp_path / "index.db"
+        with StratumIndex(db_path=db) as idx:
+            with pytest.raises(PathRequiredToDeleteDBException):
+                idx.del_db(path="")
+
+    def test_exception_message_mentions_path(self):
+        exc = PathRequiredToDeleteDBException()
+        assert "Path required" in str(exc)
+
+    def test_file_not_deleted_when_no_path_given(self, tmp_path):
+        db = tmp_path / "index.db"
+        with StratumIndex(db_path=db) as idx:
+            try:
+                idx.del_db(path=None)
+            except PathRequiredToDeleteDBException:
+                pass
+        assert db.exists()
+
+
+# ---------------------------------------------------------------------------
+# del_db() — DeletionPathIncorrectException
+# ---------------------------------------------------------------------------
+
+
+class TestDelDbWrongPath:
+    def test_raises_when_path_does_not_match(self, tmp_path):
+        db = tmp_path / "index.db"
+        wrong = tmp_path / "other.db"
+        with StratumIndex(db_path=db) as idx:
+            with pytest.raises(DeletionPathIncorrectException):
+                idx.del_db(path=wrong)
+
+    def test_exception_message_contains_correct_path(self, tmp_path):
+        db = tmp_path / "index.db"
+        exc = DeletionPathIncorrectException(db)
+        assert str(db) in str(exc)
+
+    def test_file_not_deleted_when_wrong_path_given(self, tmp_path):
+        db = tmp_path / "index.db"
+        wrong = tmp_path / "other.db"
+        with StratumIndex(db_path=db) as idx:
+            try:
+                idx.del_db(path=wrong)
+            except DeletionPathIncorrectException:
+                pass
+        assert db.exists()

@@ -55,6 +55,11 @@ def _run_stratum(config, dry_run=bool) -> None:
     finally:  # TODO consider which types of exceptions we will want to handle
         _delete_pid()
 
+        # we delete the DB so that future tests in different dirs won't incorrectly have different
+        # indexes
+        with StratumIndex() as db:
+            db.del_db(path=Path(__file__).parent / "index.db")
+
 
 def _write_pid() -> None:
     # NOTE in the future we will want to think on how we can handle PID when we introduce

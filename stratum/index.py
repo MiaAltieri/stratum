@@ -1,6 +1,7 @@
 """Dedup index — persists content hashes in a local SQLite database."""
 
 import logging
+import os
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,6 +15,30 @@ CREATE TABLE IF NOT EXISTS hashes (
 
 
 logger = logging.getLogger(__name__)
+
+
+class PathRequiredToDeleteDBException(Exception):
+    """Exception created as a guardrail.
+
+    It is not technically required to have the path to delete the DB since its path is in the obj,
+    but deleting a DB is a dangerous operation, and we need to ensure users are certain they want
+    to delete the DB
+    """
+
+    def __str__(self):
+        return "Path required to delete DB. Do you really want to delete it?"
+
+
+class DeletionPathIncorrectException(Exception):
+    """Exception created as a guardrail.
+
+    It is not technically required to have the path to delete the DB since its path is in the obj,
+    but deleting a DB is a dangerous operation. By ensuring the paths are the same we can force
+    the user to be certain in their operations.
+    """
+
+    def __str__(self):
+        return f"Path passed for deletion is not correct should be {self.args}."
 
 
 class StratumIndex:
@@ -53,3 +78,19 @@ class StratumIndex:
             (content_hash, str(path), datetime.now(timezone.utc).isoformat()),
         )
         self._conn.commit()
+
+    def del_db(self, path: Path) -> None:
+        """Deleting the DB allows us clear out results from previous scans.
+
+        I am worried about the situation where we scan one dir, retain everything in the index,
+        then scan a different dir and we report everything as a duplicate that it should be
+        deleted. I think this is not how stratum should work across separate runs.
+        """
+        # if path not provided raise
+        if not path:
+            raise PathRequiredToDeleteDBException()
+        if path != self._path:
+            raise DeletionPathIncorrectException(self._path)
+
+        logger.info("deleting index at %s", path)
+        os.remove(path)
