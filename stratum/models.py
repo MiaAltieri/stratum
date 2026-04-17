@@ -9,6 +9,15 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, computed_field
 
 
+class ScanMetadata(BaseModel):
+    """History of scan."""
+
+    files_scanned: int
+    duplicates_found: int
+    suggestions_written: int
+    duration_seconds: int
+
+
 class FileType(StrEnum):
     """Describes the file type."""
 
