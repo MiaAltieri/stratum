@@ -26,6 +26,7 @@ ruff = ">=0.4"
 tox = ">=4.0"
 black = ">=24.0"
 isort = ">=5.0"
+tomli-w = ">=1.0"
 
 [tool.ruff]
 line-length = 99

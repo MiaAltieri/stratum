@@ -1,9 +1,12 @@
 """Shared utilities for Stratum integration tests."""
 
 import json
+import tomli_w
 from pathlib import Path
 
-NORMAL_FILE_BYTES = 1024  # 1 KB, above the 0.0001 MB min_file_size threshold used in tests
+NORMAL_FILE_BYTES = (
+    1024  # 1 KB, above the 0.0001 MB min_file_size threshold used in tests
+)
 
 # Unique byte patterns — each letter = distinct file content
 CONTENT_A = b"A" * NORMAL_FILE_BYTES
@@ -13,7 +16,9 @@ CONTENT_D = b"D" * NORMAL_FILE_BYTES
 CONTENT_E = b"E" * NORMAL_FILE_BYTES
 CONTENT_F = b"F" * NORMAL_FILE_BYTES
 CONTENT_G = b"G" * NORMAL_FILE_BYTES
-CONTENT_SHARED_AB = b"S" * NORMAL_FILE_BYTES  # same content placed in both dir_a and dir_b
+CONTENT_SHARED_AB = (
+    b"S" * NORMAL_FILE_BYTES
+)  # same content placed in both dir_a and dir_b
 CONTENT_SMALL = b"x" * 50  # below the 0.0001 MB (~105 byte) threshold
 
 
@@ -30,21 +35,36 @@ def make_stratum_config(
     min_file_size_mb: float = 0.0001,
     max_depth: int = 20,
     exclude_patterns: list[str] | None = None,
+    config_dir: Path | None = None,
+    return_path: bool = False,
 ):
-    """Build a StratumConfig for the given directories without writing a TOML file."""
-    from stratum.config import ScanConfig, SuggestionsConfig, StratumConfig
+    """Write a stratum.toml to config_dir (or suggestions_dir) and load config from it."""
+    from stratum import config as config_module
 
     if exclude_patterns is None:
         exclude_patterns = ["DS_Store", "tmp", "git"]
 
-    scan = ScanConfig(
-        watch_dirs=watch_dirs,
-        min_file_size_mb=min_file_size_mb,
-        max_depth=max_depth,
-        exclude_patterns=exclude_patterns,
-    )
-    suggestions = SuggestionsConfig(log_path=suggestions_dir)
-    return StratumConfig(scan=scan, suggestions=suggestions)
+    toml_dir = config_dir if config_dir is not None else suggestions_dir
+    toml_dir.mkdir(parents=True, exist_ok=True)
+    toml_path = toml_dir / "stratum.toml"
+
+    data = {
+        "scan": {
+            "watch_dirs": [str(p) for p in watch_dirs],
+            "min_file_size_mb": min_file_size_mb,
+            "max_depth": max_depth,
+            "exclude_patterns": exclude_patterns,
+        },
+        "suggestions": {
+            "log_path": str(suggestions_dir),
+        },
+    }
+    toml_path.write_bytes(tomli_w.dumps(data).encode())
+
+    if return_path:
+        return toml_path
+
+    return config_module.load(toml_path)
 
 
 def read_suggestions(suggestions_dir: Path) -> list[dict]:
