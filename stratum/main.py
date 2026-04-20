@@ -101,7 +101,7 @@ def _process_directory(config, dry_run) -> ScanMetadata:
             file_hash = hash_file(record.path)
             record = record.model_copy(update={"file_type": classify(record.ext)})
             duplicate_path = db.contains(file_hash)
-            if str(duplicate_path) != str(record.path):
+            if duplicate_path is not None and str(duplicate_path) != str(record.path):
                 scan_data[DUPS_FOUND] += 1
                 scan_data[SUGGS_WRIT] += 1
 

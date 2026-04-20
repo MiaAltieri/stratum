@@ -803,4 +803,4 @@ python-discovery = ">=1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11"
-content-hash = "2d18463dd7f94eab5753005767351f1d965a78035c8f009f50887fefae6fda02"
+content-hash = "cb410b6798f9e297ff8df2bc69a213ce79ab5aa7547258e1cad6f22aa3e3582b"
