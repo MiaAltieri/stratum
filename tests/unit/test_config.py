@@ -7,8 +7,8 @@ import pytest
 from pydantic import ValidationError
 
 from stratum.config import ScanConfig, StratumConfig, SuggestionsConfig, load
-from stratum.models import UploadConfig, UploadMode
 from stratum.exceptions import DirNotFoundException
+from stratum.models import UploadConfig, UploadMode
 
 # ---------------------------------------------------------------------------
 # Helpers

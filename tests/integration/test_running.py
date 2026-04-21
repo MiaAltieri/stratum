@@ -13,7 +13,6 @@ from stratum.main import (
     _run_stratum,
     _write_pid,
 )
-
 from tests.integration.helpers import make_stratum_config, read_suggestions
 
 _PID_PATH = Path(_main_module.__file__).parent / PID_FILE_NAME
@@ -107,7 +106,7 @@ class TestSuggestionLog:
         _process_directory(config, dry_run=False)
         log_file = tmp_path / "suggestions.jsonl"
         # Log file may be created but should contain no entries
-        assert read_suggestions(tmp_path) == []
+        assert read_suggestions(log_file) == []
 
 
 @pytest.mark.integration

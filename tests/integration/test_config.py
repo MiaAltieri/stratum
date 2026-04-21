@@ -3,7 +3,6 @@
 import pytest
 
 from stratum.main import _process_directory
-
 from tests.integration.helpers import make_stratum_config, read_suggestions
 
 
