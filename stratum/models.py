@@ -9,15 +9,6 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, computed_field
 
 
-class ScanMetadata(BaseModel):
-    """History of scan."""
-
-    files_scanned: int
-    duplicates_found: int
-    suggestions_written: int
-    duration_seconds: int
-
-
 class FileType(StrEnum):
     """Describes the file type."""
 
@@ -38,6 +29,42 @@ class SuggestionAction(StrEnum):
     PERMISSION_ANOMALY = "PERMISSION_ANOMALY"
 
 
+class UploadMode(StrEnum):
+    """Upload modes for stratum."""
+
+    METADATA_ONLY = "METADATA_ONLY"
+    FULL_CONTENT = "FULL_CONTENT"  # forward-compatible; raises NotImplementedError in uploader
+
+
+class UploadConfig(BaseModel):
+    """Upload specifics for stratum."""
+
+    mode: UploadMode = UploadMode.METADATA_ONLY
+    bucket: str = ""
+    prefix: str = "stratum/"
+    region: str = ""
+    profile: str | None = "stratum"
+
+
+class UploadResult(BaseModel):
+    """Upload metadata, one per FileRecord"""
+
+    model_config = ConfigDict(frozen=True)
+    s3_key: str
+    success: bool
+    bytes_transferred: int
+    error: str | None = None
+
+
+class ScanMetadata(BaseModel):
+    """History of scan."""
+
+    files_scanned: int
+    duplicates_found: int
+    suggestions_written: int
+    duration_seconds: int
+
+
 class FileRecord(BaseModel):
     """Keeps track of a files generating a frozen record."""
 
@@ -51,6 +78,8 @@ class FileRecord(BaseModel):
     file_type: FileType = FileType.OTHER  # set by tagger
     is_duplicate: bool = False  # set downstream in ?scan? module
     duplicate_of: Path | None = None  # set downstream in ?scan? module
+    # set by the orchestra via model_copy (bc FileRecord is frozen)
+    upload_result: UploadResult | None = None
 
     @computed_field  # type: ignore[misc]
     @property
