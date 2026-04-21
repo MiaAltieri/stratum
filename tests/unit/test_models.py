@@ -6,7 +6,15 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from stratum.models import FileRecord, FileType, SuggestionAction, SuggestionEntry
+from stratum.models import (
+    FileRecord,
+    FileType,
+    SuggestionAction,
+    SuggestionEntry,
+    UploadConfig,
+    UploadMode,
+    UploadResult,
+)
 
 DT = datetime(2024, 3, 15, 10, 30, 0, tzinfo=timezone.utc)
 
@@ -85,3 +93,139 @@ class TestSuggestionEntry:
         entry = self.make_entry(action=SuggestionAction.ARCHIVE_CANDIDATE)
         data = entry.model_dump()
         assert data["action"] == "ARCHIVE_CANDIDATE"
+
+
+# ---------------------------------------------------------------------------
+# UploadMode
+# ---------------------------------------------------------------------------
+
+
+class TestUploadMode:
+    def test_metadata_only_is_importable(self):
+        assert UploadMode.METADATA_ONLY == "METADATA_ONLY"
+
+    def test_full_content_is_importable(self):
+        assert UploadMode.FULL_CONTENT == "FULL_CONTENT"
+
+    def test_is_str_enum(self):
+        assert isinstance(UploadMode.METADATA_ONLY, str)
+
+
+# ---------------------------------------------------------------------------
+# UploadConfig
+# ---------------------------------------------------------------------------
+
+
+class TestUploadConfig:
+    def test_valid_construction_with_all_fields(self):
+        cfg = UploadConfig(
+            mode=UploadMode.METADATA_ONLY,
+            bucket="my-bucket",
+            prefix="stratum/",
+            region="us-east-1",
+            profile="stratum",
+        )
+        assert cfg.mode == UploadMode.METADATA_ONLY
+        assert cfg.bucket == "my-bucket"
+        assert cfg.prefix == "stratum/"
+        assert cfg.region == "us-east-1"
+        assert cfg.profile == "stratum"
+
+    def test_default_mode_is_metadata_only(self):
+        cfg = UploadConfig()
+        assert cfg.mode == UploadMode.METADATA_ONLY
+
+    def test_default_prefix(self):
+        cfg = UploadConfig()
+        assert cfg.prefix == "stratum/"
+
+    def test_profile_can_be_none(self):
+        cfg = UploadConfig(bucket="b", region="us-east-1", profile=None)
+        assert cfg.profile is None
+
+    def test_bucket_can_be_empty_string(self):
+        cfg = UploadConfig()
+        assert cfg.bucket == ""
+
+    def test_full_content_mode_accepted_at_config_time(self):
+        cfg = UploadConfig(mode=UploadMode.FULL_CONTENT)
+        assert cfg.mode == UploadMode.FULL_CONTENT
+
+
+# ---------------------------------------------------------------------------
+# UploadResult
+# ---------------------------------------------------------------------------
+
+
+def make_upload_result(**kwargs) -> UploadResult:
+    defaults = dict(s3_key="stratum/meta/2024/03/abc123.json", success=True, bytes_transferred=400)
+    defaults.update(kwargs)
+    return UploadResult(**defaults)
+
+
+class TestUploadResult:
+    def test_valid_success_result(self):
+        result = make_upload_result()
+        assert result.s3_key == "stratum/meta/2024/03/abc123.json"
+        assert result.success is True
+        assert result.bytes_transferred == 400
+        assert result.error is None
+
+    def test_valid_failure_result(self):
+        result = make_upload_result(success=False, error="AccessDenied: insufficient permissions")
+        assert result.success is False
+        assert result.error == "AccessDenied: insufficient permissions"
+
+    def test_frozen_mutation_raises(self):
+        result = make_upload_result()
+        with pytest.raises(ValidationError):
+            result.success = False
+
+    def test_error_defaults_to_none(self):
+        result = make_upload_result(success=True)
+        assert result.error is None
+
+    def test_missing_s3_key_raises(self):
+        with pytest.raises(ValidationError):
+            UploadResult(success=True, bytes_transferred=400)
+
+    def test_missing_success_raises(self):
+        with pytest.raises(ValidationError):
+            UploadResult(s3_key="stratum/meta/key.json", bytes_transferred=400)
+
+
+# ---------------------------------------------------------------------------
+# FileRecord — upload_result field and frozen copy pattern
+# ---------------------------------------------------------------------------
+
+
+class TestFileRecordUploadResult:
+    def test_upload_result_defaults_to_none(self):
+        record = make_file_record()
+        assert record.upload_result is None
+
+    def test_model_copy_attaches_upload_result(self):
+        record = make_file_record()
+        result = make_upload_result()
+        updated = record.model_copy(update={"upload_result": result})
+        assert updated.upload_result == result
+        assert updated.upload_result.success is True
+
+    def test_model_copy_returns_new_instance(self):
+        record = make_file_record()
+        result = make_upload_result()
+        updated = record.model_copy(update={"upload_result": result})
+        assert updated is not record
+
+    def test_original_record_unchanged_after_copy(self):
+        record = make_file_record()
+        result = make_upload_result()
+        record.model_copy(update={"upload_result": result})
+        assert record.upload_result is None
+
+    def test_copied_record_is_still_frozen(self):
+        record = make_file_record()
+        result = make_upload_result()
+        updated = record.model_copy(update={"upload_result": result})
+        with pytest.raises(ValidationError):
+            updated.size_bytes = 9999

@@ -9,20 +9,15 @@ import pytest
 
 import stratum.index as _index_module
 import stratum.main as _main_module
+from stratum.exceptions import DirNotFoundException
 from stratum.index import (
     DeletionPathIncorrectException,
     PathRequiredToDeleteDBException,
     StratumIndex,
 )
-from stratum.exceptions import DirNotFoundException
-from stratum.main import (
-    PID_FILE_NAME,
-    _process_directory,
-    _run_stratum,
-)
+from stratum.main import PID_FILE_NAME, _process_directory, _run_stratum
 from stratum.suggestion_log import CalledOutsideContextManager, SuggestionLogger
-
-from tests.integration.helpers import make_stratum_config, write_file, CONTENT_A
+from tests.integration.helpers import CONTENT_A, make_stratum_config, write_file
 
 _DB_PATH = Path(_index_module.__file__).parent / "index.db"
 _PID_PATH = Path(_main_module.__file__).parent / PID_FILE_NAME
@@ -83,9 +78,7 @@ class TestPermissionDeniedDirectory:
         )
         _process_directory(config, dry_run=False)
         log_file = tmp_path / "suggestions.jsonl"
-        assert (
-            not log_file.exists() or log_file.read_text(encoding="utf-8").strip() == ""
-        )
+        assert not log_file.exists() or log_file.read_text(encoding="utf-8").strip() == ""
 
     @pytest.mark.skipif(os.geteuid() == 0, reason="root bypasses permission checks")
     def test_permission_denied_subdir_skips_that_subdir_only(self, tmp_path):
@@ -118,9 +111,7 @@ class TestPidAndDbCleanupOnFailure:
             watch_dirs=[tmp_path],
             suggestions_dir=tmp_path / "suggestions",
         )
-        with patch(
-            "stratum.main.scan", side_effect=RuntimeError("unexpected scan failure")
-        ):
+        with patch("stratum.main.scan", side_effect=RuntimeError("unexpected scan failure")):
             with pytest.raises(RuntimeError, match="unexpected scan failure"):
                 _run_stratum(config, dry_run=False)
         assert not _PID_PATH.exists()
@@ -130,9 +121,7 @@ class TestPidAndDbCleanupOnFailure:
             watch_dirs=[tmp_path],
             suggestions_dir=tmp_path / "suggestions",
         )
-        with patch(
-            "stratum.main.scan", side_effect=RuntimeError("unexpected scan failure")
-        ):
+        with patch("stratum.main.scan", side_effect=RuntimeError("unexpected scan failure")):
             with pytest.raises(RuntimeError):
                 _run_stratum(config, dry_run=False)
         assert not _DB_PATH.exists()
@@ -140,11 +129,10 @@ class TestPidAndDbCleanupOnFailure:
 
 @pytest.mark.integration
 class TestSuggestionsLogFailure:
-    def test_suggest_outside_context_raises_called_outside_context_manager(
-        self, tmp_path
-    ):
-        from stratum.models import SuggestionAction, SuggestionEntry
+    def test_suggest_outside_context_raises_called_outside_context_manager(self, tmp_path):
         from datetime import datetime, timezone
+
+        from stratum.models import SuggestionAction, SuggestionEntry
 
         logger = SuggestionLogger(tmp_path)
         entry = SuggestionEntry(

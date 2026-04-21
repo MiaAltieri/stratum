@@ -28,3 +28,15 @@ archive_days = 365
 
 # Emit REORGANIZE suggestions for misplaced files
 reorganize = true
+
+# ── Upload ────────────────────────────────────────────────────────────────────
+# Uncomment and populate this section to enable S3 metadata upload.
+# Credentials are NOT configured here — use `aws configure --profile stratum`
+# to set up a named profile in ~/.aws/credentials instead.
+#
+# [upload]
+# mode    = "metadata_only"   # Only supported mode in Phase 2. Do not change.
+# bucket  = "my-stratum-archive"
+# prefix  = "stratum/"        # All objects will be written under this prefix
+# region  = "us-east-1"
+# profile = "stratum"         # Named profile from ~/.aws/credentials

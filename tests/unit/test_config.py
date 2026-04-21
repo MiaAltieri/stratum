@@ -8,6 +8,7 @@ from pydantic import ValidationError
 
 from stratum.config import ScanConfig, StratumConfig, SuggestionsConfig, load
 from stratum.exceptions import DirNotFoundException
+from stratum.models import UploadConfig, UploadMode
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -126,6 +127,23 @@ class TestStratumConfig:
         with pytest.raises(ValidationError):
             StratumConfig()
 
+    def test_model_validate_empty_raises_on_missing_scan(self):
+        with pytest.raises(ValidationError):
+            StratumConfig.model_validate({})
+
+    def test_model_validate_without_upload_section_succeeds(self, tmp_path):
+        d = tmp_path / "d"
+        d.mkdir()
+        cfg = StratumConfig.model_validate({"scan": {"watch_dirs": [str(d)]}})
+        assert isinstance(cfg, StratumConfig)
+
+    def test_upload_defaults_when_section_absent(self, tmp_path):
+        d = tmp_path / "d"
+        d.mkdir()
+        cfg = StratumConfig.model_validate({"scan": {"watch_dirs": [str(d)]}})
+        assert cfg.upload.mode == UploadMode.METADATA_ONLY
+        assert cfg.upload.prefix == "stratum/"
+
 
 # ---------------------------------------------------------------------------
 # load()
@@ -214,6 +232,41 @@ class TestLoad:
         toml_path = write_toml(tmp_path, "[suggestions]\narchive_days = 30\n")
         with pytest.raises(ValidationError):
             load(toml_path)
+
+    def test_upload_section_loads_cleanly_when_present(self, tmp_path):
+        d = tmp_path / "d"
+        d.mkdir()
+        toml_path = write_toml(
+            tmp_path,
+            f"""
+            [scan]
+            watch_dirs = ["{d}"]
+
+            [upload]
+            mode    = "METADATA_ONLY"
+            bucket  = "my-stratum-archive"
+            prefix  = "stratum/"
+            region  = "us-east-1"
+            profile = "stratum"
+            """,
+        )
+        cfg = load(toml_path)
+        assert cfg.upload.mode == UploadMode.METADATA_ONLY
+        assert cfg.upload.bucket == "my-stratum-archive"
+        assert cfg.upload.region == "us-east-1"
+
+    def test_upload_section_absent_loads_cleanly(self, tmp_path):
+        d = tmp_path / "d"
+        d.mkdir()
+        toml_path = write_toml(
+            tmp_path,
+            f"""
+            [scan]
+            watch_dirs = ["{d}"]
+            """,
+        )
+        cfg = load(toml_path)
+        assert isinstance(cfg.upload, UploadConfig)
 
 
 # ---------------------------------------------------------------------------

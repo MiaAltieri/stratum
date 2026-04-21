@@ -3,7 +3,6 @@
 import pytest
 
 from stratum.main import _process_directory, _run_stratum
-
 from tests.integration.helpers import make_stratum_config, read_suggestions
 
 
@@ -81,9 +80,7 @@ class TestSeparateDirScans:
         result = _process_directory(config, dry_run=False)
         assert result.duplicates_found == 0
 
-    def test_separate_runs_on_dir_a_and_dir_b_do_not_share_the_index(
-        self, test_root, tmp_path
-    ):
+    def test_separate_runs_on_dir_a_and_dir_b_do_not_share_the_index(self, test_root, tmp_path):
         """Two separate _run_stratum calls must not carry index state between them.
 
         dir_a/cross_dup.txt and dir_b/cross_dup.txt are byte-identical. Running stratum

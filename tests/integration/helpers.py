@@ -1,12 +1,11 @@
 """Shared utilities for Stratum integration tests."""
 
 import json
-import tomli_w
 from pathlib import Path
 
-NORMAL_FILE_BYTES = (
-    1024  # 1 KB, above the 0.0001 MB min_file_size threshold used in tests
-)
+import tomli_w
+
+NORMAL_FILE_BYTES = 1024  # 1 KB, above the 0.0001 MB min_file_size threshold used in tests
 
 # Unique byte patterns — each letter = distinct file content
 CONTENT_A = b"A" * NORMAL_FILE_BYTES
@@ -16,9 +15,7 @@ CONTENT_D = b"D" * NORMAL_FILE_BYTES
 CONTENT_E = b"E" * NORMAL_FILE_BYTES
 CONTENT_F = b"F" * NORMAL_FILE_BYTES
 CONTENT_G = b"G" * NORMAL_FILE_BYTES
-CONTENT_SHARED_AB = (
-    b"S" * NORMAL_FILE_BYTES
-)  # same content placed in both dir_a and dir_b
+CONTENT_SHARED_AB = b"S" * NORMAL_FILE_BYTES  # same content placed in both dir_a and dir_b
 CONTENT_SMALL = b"x" * 50  # below the 0.0001 MB (~105 byte) threshold
 
 
