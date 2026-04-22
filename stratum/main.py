@@ -96,11 +96,29 @@ def _process_directory(config, dry_run) -> ScanMetadata:
         StratumIndex() as db,
         SuggestionLogger(config.suggestions.log_path) as sug_logger,
     ):
+        # run scan
         for record in scan(config.scan):
             scan_data[SCANNED] += 1
+
+            # run hasher
             file_hash = hash_file(record.path)
-            record = record.model_copy(update={"file_type": classify(record.ext)})
+
+            # check duplicate
             duplicate_path = db.contains(file_hash)
+            is_dup = duplicate_path is not None
+
+            # run tagger
+            tag = classify(record.ext)
+
+            # complete the record
+            record = record.model_copy(
+                update={
+                    "file_type": tag,
+                    "content_hash": file_hash,
+                    "is_duplicate": is_dup,
+                }
+            )
+
             if duplicate_path is not None and str(duplicate_path) != str(record.path):
                 scan_data[DUPS_FOUND] += 1
                 scan_data[SUGGS_WRIT] += 1

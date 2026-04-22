@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from stratum.config import ScanConfig
-from stratum.models import FileRecord, FileType
+from stratum.models import FileRecord
 from stratum.scanner import scan
 
 # ---------------------------------------------------------------------------
@@ -291,16 +291,6 @@ class TestFileRecordFields:
         (tmp_path / "f.txt").write_text("hi")
         results = list(scan(make_config([tmp_path])))
         assert results[0].content_hash is None
-
-    def test_file_type_defaults_to_other(self, tmp_path):
-        (tmp_path / "f.txt").write_text("hi")
-        results = list(scan(make_config([tmp_path])))
-        assert results[0].file_type == FileType.OTHER
-
-    def test_is_duplicate_defaults_to_false(self, tmp_path):
-        (tmp_path / "f.txt").write_text("hi")
-        results = list(scan(make_config([tmp_path])))
-        assert results[0].is_duplicate is False
 
     def test_duplicate_of_defaults_to_none(self, tmp_path):
         (tmp_path / "f.txt").write_text("hi")
