@@ -120,7 +120,10 @@ class TestGenerateUploadContent:
 
     def test_hostname_comes_from_socket(self):
         with patch("stratum.backends.metadata_only._read_version", return_value=FAKE_VERSION):
-            with patch("stratum.backends.metadata_only.socket.gethostname", return_value="test-box"):
+            with patch(
+                "stratum.backends.metadata_only.socket.gethostname",
+                return_value="test-box",
+            ):
                 parsed = json.loads(self._make_backend()._generate_upload_content(self.record))
         assert parsed["hostname"] == "test-box"
 

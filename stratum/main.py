@@ -30,9 +30,7 @@ def run() -> None:
 
     Future PR: handle DirNotFoundException gracefully.
     """
-    logging.basicConfig(
-        level=logging.DEBUG, format="%(levelname)s %(name)s: %(message)s"
-    )
+    logging.basicConfig(level=logging.DEBUG, format="%(levelname)s %(name)s: %(message)s")
     logger.info("BEGINNING STRATUM")
     args = _parse_args()
     config = load(args.config_path)

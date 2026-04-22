@@ -1,10 +1,10 @@
-from stratum.models import FileRecord, UploadResult
+import json
+import socket
+
 from stratum.config import UploadConfig
 from stratum.exceptions import FileRecordNotProcessedException
 from stratum.helpers import _read_version
-import socket
-import json
-
+from stratum.models import FileRecord, UploadResult
 
 BYTE_ESTIMATE = 1024
 

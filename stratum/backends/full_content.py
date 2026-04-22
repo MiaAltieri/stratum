@@ -1,5 +1,5 @@
-from stratum.models import FileRecord, UploadResult
 from stratum.config import UploadConfig
+from stratum.models import FileRecord, UploadResult
 
 
 class FullContentBackend:

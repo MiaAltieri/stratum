@@ -47,9 +47,7 @@ class TestEmptyDirectory:
 
 @pytest.mark.integration
 class TestSuggestionLog:
-    def test_suggestion_log_file_is_created_after_scan_with_duplicates(
-        self, test_root, tmp_path
-    ):
+    def test_suggestion_log_file_is_created_after_scan_with_duplicates(self, test_root, tmp_path):
         config = make_stratum_config(
             watch_dirs=[test_root / "main_scan_dir"],
             suggestions_dir=tmp_path,
@@ -71,9 +69,7 @@ class TestSuggestionLog:
             assert "reason" in entry
             assert "ts" in entry
 
-    def test_suggestion_log_entries_match_suggestions_written_count(
-        self, test_root, tmp_path
-    ):
+    def test_suggestion_log_entries_match_suggestions_written_count(self, test_root, tmp_path):
         config = make_stratum_config(
             watch_dirs=[test_root / "main_scan_dir"],
             suggestions_dir=tmp_path,

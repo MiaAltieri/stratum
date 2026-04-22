@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from stratum.config import ScanConfig
-from stratum.models import FileRecord, FileType
+from stratum.models import FileRecord
 from stratum.scanner import scan
 
 # ---------------------------------------------------------------------------

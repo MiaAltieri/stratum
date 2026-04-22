@@ -1,5 +1,6 @@
-from stratum.models import FileRecord, UploadResult
 from typing import Protocol
+
+from stratum.models import FileRecord, UploadResult
 
 
 class UploadBackend(Protocol):
