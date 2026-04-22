@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, computed_field
+from pydantic import BaseModel, ConfigDict, computed_field, Field
 
 
 class FileType(StrEnum):
@@ -33,7 +33,9 @@ class UploadMode(StrEnum):
     """Upload modes for stratum."""
 
     METADATA_ONLY = "METADATA_ONLY"
-    FULL_CONTENT = "FULL_CONTENT"  # forward-compatible; raises NotImplementedError in uploader
+    FULL_CONTENT = (
+        "FULL_CONTENT"  # forward-compatible; raises NotImplementedError in uploader
+    )
 
 
 class UploadConfig(BaseModel):
@@ -51,9 +53,7 @@ class UploadResult(BaseModel):
 
     model_config = ConfigDict(frozen=True)
     s3_key: str
-    success: bool
     bytes_transferred: int
-    error: str | None = None
 
 
 class ScanMetadata(BaseModel):
@@ -73,10 +73,10 @@ class FileRecord(BaseModel):
     size_bytes: int
     mtime: datetime
     atime: datetime
-    ext: str | None = None  # set by scanner
+    ext: str | None = None  # set by scanner TODO !!! where is this used
     content_hash: str | None = None  # set by hasher
-    file_type: FileType = FileType.OTHER  # set by tagger
-    is_duplicate: bool = False  # set downstream in ?scan? module
+    file_type: FileType | None = None  # set by tagger
+    is_duplicate: bool | None = None  # set downstream in ?scan? module
     duplicate_of: Path | None = None  # set downstream in ?scan? module
     # set by the orchestra via model_copy (bc FileRecord is frozen)
     upload_result: UploadResult | None = None
@@ -85,6 +85,10 @@ class FileRecord(BaseModel):
     @property
     def year_month(self) -> str:
         return self.mtime.strftime("%Y/%m")
+
+    def is_complete(self):
+        # TODO !!! THESE FIELDS ARE NOT SET BY ORCHESTRATOR
+        return self.content_hash and self.file_type and (self.is_duplicate is not None)
 
 
 class SuggestionEntry(BaseModel):
