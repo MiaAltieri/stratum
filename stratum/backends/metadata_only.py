@@ -62,10 +62,7 @@ class MetadataOnlyBackend:
             ContentType="json",
         )
 
-        return UploadResult(
-            s3_key=s3_key,
-            bytes_transfered=self.estimated_bytes,
-        )
+        return UploadResult(s3_key=s3_key, bytes_transfered=self.estimated_bytes)
 
     def estimated_bytes(self, record: FileRecord) -> int:
         """Since we are not uploading full files we return a constant"""

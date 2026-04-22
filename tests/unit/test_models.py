@@ -36,8 +36,8 @@ class TestFileRecord:
         assert record.path == Path("/some/file.txt")
         assert record.size_bytes == 1024
         assert record.mtime == DT
-        assert record.file_type == FileType.OTHER
-        assert record.is_duplicate is False
+        assert record.file_type == None
+        assert record.is_duplicate is None
         assert record.content_hash is None
         assert record.duplicate_of is None
 
@@ -63,7 +63,7 @@ class TestFileRecord:
     def test_enum_serialisation_defaults_other(self):
         record = make_file_record()
         data = record.model_dump()
-        assert data["file_type"] == "other"
+        assert data["file_type"] == None
 
 
 class TestSuggestionEntry:
@@ -158,7 +158,7 @@ class TestUploadConfig:
 
 
 def make_upload_result(**kwargs) -> UploadResult:
-    defaults = dict(s3_key="stratum/meta/2024/03/abc123.json", success=True, bytes_transferred=400)
+    defaults = dict(s3_key="stratum/meta/2024/03/abc123.json", bytes_transferred=400)
     defaults.update(kwargs)
     return UploadResult(**defaults)
 
@@ -167,31 +167,16 @@ class TestUploadResult:
     def test_valid_success_result(self):
         result = make_upload_result()
         assert result.s3_key == "stratum/meta/2024/03/abc123.json"
-        assert result.success is True
         assert result.bytes_transferred == 400
-        assert result.error is None
-
-    def test_valid_failure_result(self):
-        result = make_upload_result(success=False, error="AccessDenied: insufficient permissions")
-        assert result.success is False
-        assert result.error == "AccessDenied: insufficient permissions"
 
     def test_frozen_mutation_raises(self):
         result = make_upload_result()
         with pytest.raises(ValidationError):
             result.success = False
 
-    def test_error_defaults_to_none(self):
-        result = make_upload_result(success=True)
-        assert result.error is None
-
     def test_missing_s3_key_raises(self):
         with pytest.raises(ValidationError):
-            UploadResult(success=True, bytes_transferred=400)
-
-    def test_missing_success_raises(self):
-        with pytest.raises(ValidationError):
-            UploadResult(s3_key="stratum/meta/key.json", bytes_transferred=400)
+            UploadResult(bytes_transferred=400)
 
 
 # ---------------------------------------------------------------------------
@@ -209,7 +194,6 @@ class TestFileRecordUploadResult:
         result = make_upload_result()
         updated = record.model_copy(update={"upload_result": result})
         assert updated.upload_result == result
-        assert updated.upload_result.success is True
 
     def test_model_copy_returns_new_instance(self):
         record = make_file_record()
