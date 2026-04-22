@@ -36,7 +36,7 @@ class TestFileRecord:
         assert record.path == Path("/some/file.txt")
         assert record.size_bytes == 1024
         assert record.mtime == DT
-        assert record.file_type == None
+        assert record.file_type is None
         assert record.is_duplicate is None
         assert record.content_hash is None
         assert record.duplicate_of is None
@@ -63,7 +63,7 @@ class TestFileRecord:
     def test_enum_serialisation_defaults_other(self):
         record = make_file_record()
         data = record.model_dump()
-        assert data["file_type"] == None
+        assert data["file_type"] is None
 
 
 class TestFileRecordIsComplete:
@@ -100,7 +100,9 @@ class TestFileRecordIsComplete:
         assert not record.is_complete()
 
     def test_returns_false_when_content_hash_is_empty_string(self):
-        record = make_file_record(content_hash="", file_type=FileType.CODE, is_duplicate=False)
+        record = make_file_record(
+            content_hash="", file_type=FileType.CODE, is_duplicate=False
+        )
         assert not record.is_complete()
 
 
