@@ -33,7 +33,9 @@ class UploadMode(StrEnum):
     """Upload modes for stratum."""
 
     METADATA_ONLY = "METADATA_ONLY"
-    FULL_CONTENT = "FULL_CONTENT"  # forward-compatible; raises NotImplementedError in uploader
+    FULL_CONTENT = (
+        "FULL_CONTENT"  # forward-compatible; raises NotImplementedError in uploader
+    )
 
 
 class UploadConfig(BaseModel):
@@ -84,8 +86,8 @@ class FileRecord(BaseModel):
     def year_month(self) -> str:
         return self.mtime.strftime("%Y/%m")
 
-    def is_complete(self):
-        # TODO !!! THESE FIELDS ARE NOT SET BY ORCHESTRATOR
+    def is_complete(self) -> bool:
+        """Returns true if FileRecord has been processed and has complete fields."""
         return self.content_hash and self.file_type and (self.is_duplicate is not None)
 
 

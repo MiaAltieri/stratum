@@ -66,6 +66,44 @@ class TestFileRecord:
         assert data["file_type"] == None
 
 
+class TestFileRecordIsComplete:
+    def test_returns_true_when_all_fields_set(self):
+        record = make_file_record(
+            content_hash="sha256abc",
+            file_type=FileType.DOCUMENT,
+            is_duplicate=False,
+        )
+        assert record.is_complete()
+
+    def test_returns_true_when_is_duplicate_is_true(self):
+        record = make_file_record(
+            content_hash="sha256abc",
+            file_type=FileType.CODE,
+            is_duplicate=True,
+        )
+        assert record.is_complete()
+
+    def test_returns_false_when_no_fields_set(self):
+        record = make_file_record()
+        assert not record.is_complete()
+
+    def test_returns_false_when_content_hash_missing(self):
+        record = make_file_record(file_type=FileType.DOCUMENT, is_duplicate=False)
+        assert not record.is_complete()
+
+    def test_returns_false_when_file_type_missing(self):
+        record = make_file_record(content_hash="sha256abc", is_duplicate=False)
+        assert not record.is_complete()
+
+    def test_returns_false_when_is_duplicate_is_none(self):
+        record = make_file_record(content_hash="sha256abc", file_type=FileType.DOCUMENT)
+        assert not record.is_complete()
+
+    def test_returns_false_when_content_hash_is_empty_string(self):
+        record = make_file_record(content_hash="", file_type=FileType.CODE, is_duplicate=False)
+        assert not record.is_complete()
+
+
 class TestSuggestionEntry:
     def make_entry(self, **kwargs) -> SuggestionEntry:
         defaults = dict(

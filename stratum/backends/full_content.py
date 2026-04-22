@@ -8,7 +8,6 @@ class FullContentBackend:
         self.scan_run_id = scan_run_id
 
     def upload(self, record: FileRecord, s3_client) -> UploadResult:
-
         raise NotImplementedError("Waiting for Phase 9 to implement")
 
     def estimated_bytes(self, record: FileRecord) -> int:

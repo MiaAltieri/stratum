@@ -676,6 +676,96 @@ class TestRunStratumDbCleanup:
 
 
 # ---------------------------------------------------------------------------
+# _process_directory — record completeness
+# ---------------------------------------------------------------------------
+
+
+class TestProcessDirectoryRecordCompleteness:
+    """Verify that each FileRecord is complete (is_complete() == True) after _process_directory."""
+
+    def _run_and_capture_records(self, records, hash_val="sha256abc", file_type=FileType.DOCUMENT):
+        """Run _process_directory and return the completed FileRecord objects."""
+        completed = []
+        original_model_copy = FileRecord.model_copy
+
+        def capturing_model_copy(self_record, **kwargs):
+            result = original_model_copy(self_record, **kwargs)
+            completed.append(result)
+            return result
+
+        cfg = make_mock_config()
+        with (
+            patch("stratum.main.scan", return_value=records),
+            patch("stratum.main.hash_file", return_value=hash_val),
+            patch("stratum.main.classify", return_value=file_type),
+            patch("stratum.main.StratumIndex", return_value=make_mock_index()),
+            patch("stratum.main.SuggestionLogger", return_value=make_mock_logger()),
+            patch.object(FileRecord, "model_copy", capturing_model_copy),
+        ):
+            _process_directory(cfg, dry_run=False)
+
+        return completed
+
+    def test_single_record_is_complete_after_processing(self):
+        record = make_file_record(path=Path("/dir/file.txt"))
+        completed = self._run_and_capture_records([record])
+        assert len(completed) == 1
+        assert completed[0].is_complete()
+
+    def test_all_records_are_complete_when_multiple_files_scanned(self):
+        records = [make_file_record(path=Path(f"/dir/file_{i}.txt")) for i in range(4)]
+        completed = self._run_and_capture_records(records)
+        assert all(r.is_complete() for r in completed)
+
+    def test_completed_record_has_content_hash(self):
+        record = make_file_record(path=Path("/dir/file.txt"))
+        completed = self._run_and_capture_records([record], hash_val="deadbeef")
+        assert completed[0].content_hash == "deadbeef"
+
+    def test_completed_record_has_file_type(self):
+        record = make_file_record(path=Path("/dir/file.txt"))
+        completed = self._run_and_capture_records([record], file_type=FileType.CODE)
+        assert completed[0].file_type == FileType.CODE
+
+    def test_completed_record_has_is_duplicate_set(self):
+        record = make_file_record(path=Path("/dir/file.txt"))
+        completed = self._run_and_capture_records([record])
+        assert completed[0].is_duplicate is not None
+
+    def test_completed_record_is_not_duplicate_when_index_empty(self):
+        record = make_file_record(path=Path("/dir/file.txt"))
+        completed = self._run_and_capture_records([record])
+        assert completed[0].is_duplicate is False
+
+    def test_completed_record_is_duplicate_when_different_path_in_index(self):
+        record = make_file_record(path=Path("/dir/copy.txt"))
+        completed = []
+        original_model_copy = FileRecord.model_copy
+
+        def capturing_model_copy(self_record, **kwargs):
+            result = original_model_copy(self_record, **kwargs)
+            completed.append(result)
+            return result
+
+        cfg = make_mock_config()
+        with (
+            patch("stratum.main.scan", return_value=[record]),
+            patch("stratum.main.hash_file", return_value="abc"),
+            patch("stratum.main.classify", return_value=FileType.OTHER),
+            patch(
+                "stratum.main.StratumIndex",
+                return_value=make_mock_index(contains_return="/dir/original.txt"),
+            ),
+            patch("stratum.main.SuggestionLogger", return_value=make_mock_logger()),
+            patch.object(FileRecord, "model_copy", capturing_model_copy),
+        ):
+            _process_directory(cfg, dry_run=False)
+
+        assert completed[0].is_complete()
+        assert completed[0].is_duplicate is True
+
+
+# ---------------------------------------------------------------------------
 # run
 # ---------------------------------------------------------------------------
 

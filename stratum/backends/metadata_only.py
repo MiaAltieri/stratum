@@ -43,8 +43,6 @@ class MetadataOnlyBackend:
         if not record.is_complete():
             raise FileRecordNotProcessedException("Record has not been processed.")
 
-        # prefix here is determined by the upload config - we have just writen it out but please
-        # note this is BAD STYLE and should be referenced in another way
         s3_key = f"{self.config.prefix}/{record.year_month}/{record.content_hash}.json"
 
         upload_content = self._generate_upload_content(record)

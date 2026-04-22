@@ -1,8 +1,0 @@
-In this PR we:
-CHANGES to existing code
-- elucidated the file recorded setting from taggers/scanner/hashser/dup checker
-- changed from phase2 description, we do not process failures in the uploader - this must be done by the orchestrator
-- added version file + processing
-
-FEATURES added
-- added upload logic
