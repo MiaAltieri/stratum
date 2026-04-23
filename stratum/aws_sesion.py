@@ -1,7 +1,8 @@
 # TODO
 # pretty sure this should be a context manager
-from stratum.config import UploadConfig
 import boto3
+
+from stratum.config import UploadConfig
 
 
 class S3ClientFactory:

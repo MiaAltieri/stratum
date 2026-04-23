@@ -100,9 +100,7 @@ class TestFileRecordIsComplete:
         assert not record.is_complete()
 
     def test_returns_false_when_content_hash_is_empty_string(self):
-        record = make_file_record(
-            content_hash="", file_type=FileType.CODE, is_duplicate=False
-        )
+        record = make_file_record(content_hash="", file_type=FileType.CODE, is_duplicate=False)
         assert not record.is_complete()
 
 
