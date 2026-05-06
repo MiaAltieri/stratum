@@ -6,11 +6,12 @@ authors = [
     {name = "Mia Altieri",email = "mgaltier200@gmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.11"
-dependencies = [
-    "pydantic>=2.0",
-    "pydantic-settings>=2.0",
-]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<4.0"
+pydantic = ">=2.0"
+pydantic-settings = ">=2.0"
+aws-cdk-lib = "^2.253.0"
 
 [project.scripts]
 stratum = "stratum.main:run"
