@@ -72,9 +72,7 @@ class TestGetClient:
     def test_boto3_session_constructed_only_once_on_repeated_calls(self):
         factory = self._make_factory()
         mock_session = MagicMock()
-        with patch(
-            "stratum.aws_sesion.boto3.Session", return_value=mock_session
-        ) as mock_sess_cls:
+        with patch("stratum.aws_sesion.boto3.Session", return_value=mock_session) as mock_sess_cls:
             factory.get_client()
             factory.get_client()
             factory.get_client()
@@ -83,9 +81,7 @@ class TestGetClient:
     def test_correct_region_passed_to_session(self):
         factory = self._make_factory(region="eu-west-2")
         mock_session = MagicMock()
-        with patch(
-            "stratum.aws_sesion.boto3.Session", return_value=mock_session
-        ) as mock_sess_cls:
+        with patch("stratum.aws_sesion.boto3.Session", return_value=mock_session) as mock_sess_cls:
             factory.get_client()
         _, kwargs = mock_sess_cls.call_args
         assert kwargs["region_name"] == "eu-west-2"
@@ -93,9 +89,7 @@ class TestGetClient:
     def test_correct_profile_passed_to_session(self):
         factory = self._make_factory(profile="prod-profile")
         mock_session = MagicMock()
-        with patch(
-            "stratum.aws_sesion.boto3.Session", return_value=mock_session
-        ) as mock_sess_cls:
+        with patch("stratum.aws_sesion.boto3.Session", return_value=mock_session) as mock_sess_cls:
             factory.get_client()
         _, kwargs = mock_sess_cls.call_args
         assert kwargs["profile_name"] == "prod-profile"
@@ -103,9 +97,7 @@ class TestGetClient:
     def test_none_profile_passed_through_to_session(self):
         factory = self._make_factory(profile=None)
         mock_session = MagicMock()
-        with patch(
-            "stratum.aws_sesion.boto3.Session", return_value=mock_session
-        ) as mock_sess_cls:
+        with patch("stratum.aws_sesion.boto3.Session", return_value=mock_session) as mock_sess_cls:
             factory.get_client()
         _, kwargs = mock_sess_cls.call_args
         assert kwargs.get("profile_name") is None
@@ -152,9 +144,7 @@ class TestReset:
     def test_boto3_session_constructed_twice_after_reset(self):
         factory = self._make_factory()
         mock_session = MagicMock()
-        with patch(
-            "stratum.aws_sesion.boto3.Session", return_value=mock_session
-        ) as mock_sess_cls:
+        with patch("stratum.aws_sesion.boto3.Session", return_value=mock_session) as mock_sess_cls:
             factory.get_client()
             factory.reset()
             factory.get_client()

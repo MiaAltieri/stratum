@@ -1,17 +1,10 @@
-from aws_cdk import (
-    Duration,
-    Stack,
-    Tags,
-    RemovalPolicy,
-    aws_s3 as s3,
-    aws_iam as iam,
-    CfnOutput,
-)
+from aws_cdk import CfnOutput, Duration, RemovalPolicy, Stack, Tags
+from aws_cdk import aws_iam as iam
+from aws_cdk import aws_s3 as s3
 from constructs import Construct
 
 
 class StratumInfraStack(Stack):
-
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
@@ -22,7 +15,8 @@ class StratumInfraStack(Stack):
         bucket_name = self.node.try_get_context("bucket_name")
         is_prod = self.node.try_get_context("is_prod")
 
-        # bucket removal policy should be RETAIN in production context and DESTROY only when a destroy_on_removal context flag is explicitly set. Do not default to DESTROY.
+        # bucket removal policy should be RETAIN in production context and DESTROY only when a
+        # destroy_on_removal context flag is explicitly set. Do not default to DESTROY.
         removal_policy = RemovalPolicy.RETAIN if is_prod else RemovalPolicy.DESTROY
 
         lifecycle_rules = [
@@ -76,6 +70,4 @@ class StratumInfraStack(Stack):
             export_name="MyStack-BucketName",
         )
 
-        CfnOutput(
-            self, "BucketArn", value=bucket.bucket_arn, export_name="MyStack-BucketArn"
-        )
+        CfnOutput(self, "BucketArn", value=bucket.bucket_arn, export_name="MyStack-BucketArn")

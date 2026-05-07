@@ -1,10 +1,10 @@
 """Configuration loader for Stratum — reads and validates stratum.toml."""
 
 import logging
-import tomllib
 from pathlib import Path
 from typing import List
 
+import tomllib
 from pydantic import BaseModel, field_validator
 
 from stratum.exceptions import DirNotFoundException
