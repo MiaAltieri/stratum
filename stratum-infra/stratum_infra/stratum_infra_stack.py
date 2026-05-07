@@ -1,9 +1,10 @@
 from aws_cdk import (
-    # Duration,
+    Duration,
     Stack,
     RemovalPolicy,
     aws_s3 as s3,
     aws_iam as iam,
+    CfnOutput,
 )
 from constructs import Construct
 
@@ -19,6 +20,22 @@ class StratumInfraStack(Stack):
         # bucket removal policy should be RETAIN in production context and DESTROY only when a destroy_on_removal context flag is explicitly set. Do not default to DESTROY.
         removal_policy = RemovalPolicy.RETAIN if is_prod else RemovalPolicy.DESTROY
 
+        lifecycle_rules = [
+            s3.LifecycleRule(
+                prefix="stratum/meta/",
+                transitions=[
+                    s3.Transition(
+                        storage_class=s3.StorageClass.INFREQUENT_ACCESS,
+                        transition_after=Duration.days(30),
+                    ),
+                    s3.Transition(
+                        storage_class=s3.StorageClass.GLACIER_INSTANT_RETRIEVAL,
+                        transition_after=Duration.days(90),
+                    ),
+                ],
+            )
+        ]
+
         #  create the S3 bucket and its associated policies and lifecycle rules
         bucket = s3.Bucket(
             self,
@@ -28,6 +45,8 @@ class StratumInfraStack(Stack):
             blockPublicAccess=s3.BlockPublicAccess.BLOCK_ALL,
             enforceSSL=True,
             RemovalPolicy=removal_policy,
+            auto_delete_objects=not is_prod,
+            lifecycle_rules=lifecycle_rules,
         )
 
         # deny s3:PutObject where the server-side encryption header is absent.
@@ -43,7 +62,14 @@ class StratumInfraStack(Stack):
         )
         bucket.add_to_resource_policy(deny_unencrypted_uploads)
 
-        # Next task (idk what file) is to create Lifecycle rule on prefix stratum/meta/
-        # Last task CfnOutput exporting the bucket name and ARN (used by the orchestrator's config and by CI).
+        # export essential info for orchestrator / CI
+        CfnOutput(
+            self,
+            "BucketName",
+            value=bucket.bucket_name,
+            export_name="MyStack-BucketName",
+        )
 
-        # then this task should be done and we can proceed to testing by hand and then having claude add tests
+        CfnOutput(
+            self, "BucketArn", value=bucket.bucket_arn, export_name="MyStack-BucketArn"
+        )
