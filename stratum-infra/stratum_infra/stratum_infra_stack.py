@@ -39,12 +39,13 @@ class StratumInfraStack(Stack):
         #  create the S3 bucket and its associated policies and lifecycle rules
         bucket = s3.Bucket(
             self,
+            "StratumBucket",
             bucket_name=bucket_name,
             versioned=True,
             encryption=s3.BucketEncryption.S3_MANAGED,
-            blockPublicAccess=s3.BlockPublicAccess.BLOCK_ALL,
-            enforceSSL=True,
-            RemovalPolicy=removal_policy,
+            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
+            enforce_ssl=True,
+            removal_policy=removal_policy,
             auto_delete_objects=not is_prod,
             lifecycle_rules=lifecycle_rules,
         )
