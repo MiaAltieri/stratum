@@ -1,6 +1,7 @@
 from aws_cdk import (
     Duration,
     Stack,
+    Tags,
     RemovalPolicy,
     aws_s3 as s3,
     aws_iam as iam,
@@ -13,6 +14,10 @@ class StratumInfraStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+
+        # all resources of this stack should be labeled stratum
+        # this enables us to track our resources, spending, etc
+        Tags.of(self).add("Project", "stratum")
 
         bucket_name = self.node.try_get_context("bucket_name")
         is_prod = self.node.try_get_context("is_prod")
