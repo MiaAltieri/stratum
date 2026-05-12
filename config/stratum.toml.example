@@ -3,10 +3,11 @@
 [scan]
 # Directories to scan for duplicates and archive candidates (required)
 watch_dirs = [
-    "~/personal_projects/stratum/tests/integration/sample_dir"
+    "~/personal_projects/stratum/tests/integration/sample_dir",
+    "~/Documents",
+    "~/Downloads",
 ]
-    # "~/Documents",
-    # "~/Downloads",
+
 
 # Glob patterns to exclude (matched against filename only, not full path)
 exclude_patterns = [".DS_Store", "*.tmp", ".git"]
