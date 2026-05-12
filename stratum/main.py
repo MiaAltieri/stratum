@@ -3,11 +3,13 @@
 import argparse
 import logging
 import os
-import time
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+from stratum.aws_session import S3ClientFactory
+from stratum.backends.metadata_only import MetadataOnlyBackend
 from stratum.config import load
 from stratum.hasher import hash_file
 from stratum.index import StratumIndex
@@ -20,9 +22,6 @@ from stratum.models import (
 from stratum.scanner import scan
 from stratum.suggestion_log import SuggestionLogger
 from stratum.tagger import classify
-from stratum.backends.metadata_only import MetadataOnlyBackend
-from stratum.aws_session import S3ClientFactory
-
 
 PID_FILE_NAME = "stratum.pid"
 
@@ -41,9 +40,7 @@ def run() -> None:
 
     Future PR: handle DirNotFoundException gracefully.
     """
-    logging.basicConfig(
-        level=logging.DEBUG, format="%(levelname)s %(name)s: %(message)s"
-    )
+    logging.basicConfig(level=logging.DEBUG, format="%(levelname)s %(name)s: %(message)s")
     logger.info("BEGINNING STRATUM")
     args = _parse_args()
     config = load(args.config_path)
@@ -114,16 +111,11 @@ def _process_directory(config, dry_run) -> ScanMetadata:
     upload_config = config.upload
     s3_client_fact = S3ClientFactory(upload_config)
     s3_client = s3_client_fact.get_client()
-    meta_backend = MetadataOnlyBackend(
-        upload_config, scan_run_id=start, client=s3_client
-    )
+    meta_backend = MetadataOnlyBackend(upload_config, scan_run_id=start, client=s3_client)
 
-    # dont bother scanning if UploadConfig.bucket is empty and mode is METADATA_ONLY, the orchestrator
-    if (
-        not dry_run
-        and not upload_config.bucket
-        and upload_config.mode != UploadMode.METADATA_ONLY
-    ):
+    # dont bother scanning if UploadConfig.bucket is empty and mode is METADATA_ONLY,
+    # the orchestrator
+    if not dry_run and not upload_config.bucket and upload_config.mode != UploadMode.METADATA_ONLY:
         logger.error(
             "Cannot run, poorly formed arguments, bucket is empty but specified metadat only "
         )
@@ -157,7 +149,6 @@ def _process_directory(config, dry_run) -> ScanMetadata:
             )
 
             # TODO - why are we checking different path names
-            # TODO - elsewhere in the code "dedup" should prevent duplicate uploads
             if duplicate_path is not None and str(duplicate_path) != str(record.path):
                 scan_data[DUPS_FOUND] += 1
                 scan_data[SUGGS_WRIT] += 1
@@ -174,11 +165,13 @@ def _process_directory(config, dry_run) -> ScanMetadata:
                     print(record.path, "is identical to", duplicate_path)
                 else:
                     sug_logger.suggest(duplicate_entry)
-            elif (
-                not dry_run
-            ):  # if not duplicate and we are not running try run: upload to s3
+            elif not dry_run:  # if not duplicate and we are not running try run: upload to s3
                 try:
                     upload_res = meta_backend.upload(record, s3_client)
+                    # TODO - in the future we want to not incr uploads for dedup. I checked
+                    # manually and we don't upload dupes, but we want that reflected in the
+                    # output
+
                     scan_data[UPLOADS] += 1
                     record = record.model_copy(update={"upload_result": upload_res})
                 except Exception as e:  # BOO bare except, but yolo

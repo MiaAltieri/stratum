@@ -62,9 +62,7 @@ class MetadataOnlyBackend:
             ServerSideEncryption="AES256",
         )
 
-        return UploadResult(
-            s3_key=s3_key, bytes_transferred=self.estimated_bytes(record)
-        )
+        return UploadResult(s3_key=s3_key, bytes_transferred=self.estimated_bytes(record))
 
     def estimated_bytes(self, record: FileRecord) -> int:
         """Since we are not uploading full files we return a constant"""
