@@ -33,7 +33,9 @@ class UploadMode(StrEnum):
     """Upload modes for stratum."""
 
     METADATA_ONLY = "METADATA_ONLY"
-    FULL_CONTENT = "FULL_CONTENT"  # forward-compatible; raises NotImplementedError in uploader
+    FULL_CONTENT = (
+        "FULL_CONTENT"  # forward-compatible; raises NotImplementedError in uploader
+    )
 
 
 class UploadConfig(BaseModel):
@@ -61,6 +63,8 @@ class ScanMetadata(BaseModel):
     duplicates_found: int
     suggestions_written: int
     duration_seconds: int
+    uploads: int
+    failed_uploads: int
 
 
 class FileRecord(BaseModel):

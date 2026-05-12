@@ -4,17 +4,23 @@ import argparse
 import logging
 import os
 import time
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 from stratum.config import load
 from stratum.hasher import hash_file
 from stratum.index import StratumIndex
-from stratum.models import ScanMetadata, SuggestionAction, SuggestionEntry, UploadConfig, UploadMode
+from stratum.models import (
+    ScanMetadata,
+    SuggestionAction,
+    SuggestionEntry,
+    UploadMode,
+)
 from stratum.scanner import scan
 from stratum.suggestion_log import SuggestionLogger
 from stratum.tagger import classify
-from stratum.backends import MetadataOnlyBackend
+from stratum.backends.metadata_only import MetadataOnlyBackend
 from stratum.aws_session import S3ClientFactory
 
 
@@ -23,6 +29,7 @@ PID_FILE_NAME = "stratum.pid"
 SCANNED = "files_scanned"
 DUPS_FOUND = "duplicates_found"
 SUGGS_WRIT = "suggestions_written"
+UPLOADS = "uploads"
 DUR_S = "duration_seconds"
 FAILED_UPS = "failed_uploads"
 
@@ -90,11 +97,13 @@ def _process_directory(config, dry_run) -> ScanMetadata:
     -> emit suggestion if duplicate
 
     """
+    print("dry_run", dry_run)
     scan_data = {
         SCANNED: 0,
         DUPS_FOUND: 0,
         SUGGS_WRIT: 0,
         DUR_S: 0,
+        UPLOADS: 0,
         FAILED_UPS: 0,
     }
 
@@ -102,13 +111,23 @@ def _process_directory(config, dry_run) -> ScanMetadata:
 
     # note S3ClientFactory is created by boto which manages leaking connections for us under the
     # hood
-    upload_config = UploadConfig() # TODO pass bucket and region 
+    upload_config = config.upload
     s3_client_fact = S3ClientFactory(upload_config)
     s3_client = s3_client_fact.get_client()
-    meta_backend = MetadataOnlyBackend(upload_config, scan_run_id=start)
+    meta_backend = MetadataOnlyBackend(
+        upload_config, scan_run_id=start, client=s3_client
+    )
 
-    # dont bother scanning if UploadConfig.bucket is empty and mode is METADATA_ONLY, the orchestrator logs a clear error and exits with code 1 before starting the scan.
-    if not dry_run and not upload_config.bucket and upload_config.mode != UploadMode.METADATA_ONLY
+    # dont bother scanning if UploadConfig.bucket is empty and mode is METADATA_ONLY, the orchestrator
+    if (
+        not dry_run
+        and not upload_config.bucket
+        and upload_config.mode != UploadMode.METADATA_ONLY
+    ):
+        logger.error(
+            "Cannot run, poorly formed arguments, bucket is empty but specified metadat only "
+        )
+        sys.exit(1)
 
     with (
         StratumIndex() as db,
@@ -137,6 +156,8 @@ def _process_directory(config, dry_run) -> ScanMetadata:
                 }
             )
 
+            # TODO - why are we checking different path names
+            # TODO - elsewhere in the code "dedup" should prevent duplicate uploads
             if duplicate_path is not None and str(duplicate_path) != str(record.path):
                 scan_data[DUPS_FOUND] += 1
                 scan_data[SUGGS_WRIT] += 1
@@ -153,14 +174,16 @@ def _process_directory(config, dry_run) -> ScanMetadata:
                     print(record.path, "is identical to", duplicate_path)
                 else:
                     sug_logger.suggest(duplicate_entry)
-            elif not dry_run:# if not duplicate and we are not running try run: upload to s3
+            elif (
+                not dry_run
+            ):  # if not duplicate and we are not running try run: upload to s3
                 try:
                     upload_res = meta_backend.upload(record, s3_client)
-                except Exception as e: # BOO bare except, but yolo
+                    scan_data[UPLOADS] += 1
+                    record = record.model_copy(update={"upload_result": upload_res})
+                except Exception as e:  # BOO bare except, but yolo
                     scan_data[FAILED_UPS] += 1
                     logger.error(e)
-
-                record = record.model_copy(update={"upload_result": upload_res})
 
             db.insert(file_hash, record.path)
 
@@ -172,5 +195,5 @@ def _process_directory(config, dry_run) -> ScanMetadata:
 def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Stratum file scanner")
     p.add_argument("--config_path", type=Path, default=Path("~/.stratum/stratum.toml"))
-    p.add_argument("--dry_run", type=bool, default=True)
+    p.add_argument("--dry_run", action="store_true", default=False)
     return p.parse_args()

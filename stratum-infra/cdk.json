@@ -15,7 +15,7 @@
     ]
   },
   "context": {
-    "bucket_name": "my-app-bucket-todo-change-me-pwease",
+    "bucket_name": "my-stratum-archive",
     "is_prod": false,
     "@aws-cdk/aws-signer:signingProfileNamePassedToCfn": true,
     "@aws-cdk/aws-ecs-patterns:secGroupsDisablesImplicitOpenListener": true,
