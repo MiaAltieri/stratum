@@ -37,9 +37,7 @@ def make_file_record(**kwargs) -> FileRecord:
     return FileRecord(**defaults)
 
 
-def make_mock_config(
-    dedup_enabled: bool = True, log_path: Path = Path("/fake/.stratum/")
-):
+def make_mock_config(dedup_enabled: bool = True, log_path: Path = Path("/fake/.stratum/")):
     """Return a minimal mock StratumConfig."""
     cfg = MagicMock()
     cfg.scan = MagicMock()
@@ -77,9 +75,7 @@ class TestParseArgs:
         assert args.config_path == Path("~/.stratum/stratum.toml")
 
     def test_custom_config_path(self, monkeypatch):
-        monkeypatch.setattr(
-            sys, "argv", ["stratum", "--config_path", "/custom/config.toml"]
-        )
+        monkeypatch.setattr(sys, "argv", ["stratum", "--config_path", "/custom/config.toml"])
         args = _parse_args()
         assert args.config_path == Path("/custom/config.toml")
 
@@ -89,9 +85,7 @@ class TestParseArgs:
         assert args.dry_run is False
 
     def test_config_path_is_path_type(self, monkeypatch):
-        monkeypatch.setattr(
-            sys, "argv", ["stratum", "--config_path", "/some/path.toml"]
-        )
+        monkeypatch.setattr(sys, "argv", ["stratum", "--config_path", "/some/path.toml"])
         args = _parse_args()
         assert isinstance(args.config_path, Path)
 
@@ -276,9 +270,7 @@ class TestProcessDirectoryCounts:
             patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=records),
             patch("stratum.main.hash_file", return_value="h"),
-            patch(
-                "stratum.main.classify", return_value=FileType.DOCUMENT
-            ) as mock_classify,
+            patch("stratum.main.classify", return_value=FileType.DOCUMENT) as mock_classify,
             patch("stratum.main.StratumIndex", return_value=make_mock_index()),
             patch("stratum.main.SuggestionLogger", return_value=make_mock_logger()),
         ):
@@ -633,9 +625,7 @@ class TestRunStratum:
         with (
             patch("stratum.main._write_pid"),
             patch("stratum.main._delete_pid"),
-            patch(
-                "stratum.main._process_directory", return_value=MagicMock()
-            ) as mock_proc,
+            patch("stratum.main._process_directory", return_value=MagicMock()) as mock_proc,
             patch("stratum.main.StratumIndex", return_value=make_mock_index()),
         ):
             _run_stratum(cfg, dry_run=False)
@@ -647,9 +637,7 @@ class TestRunStratum:
         with (
             patch("stratum.main._write_pid"),
             patch("stratum.main._delete_pid"),
-            patch(
-                "stratum.main._process_directory", return_value=MagicMock()
-            ) as mock_proc,
+            patch("stratum.main._process_directory", return_value=MagicMock()) as mock_proc,
             patch("stratum.main.StratumIndex", return_value=make_mock_index()),
         ):
             _run_stratum(cfg, dry_run=True)
@@ -727,9 +715,7 @@ class TestRunStratumDbCleanup:
 class TestProcessDirectoryRecordCompleteness:
     """Verify that each FileRecord is complete (is_complete() == True) after _process_directory."""
 
-    def _run_and_capture_records(
-        self, records, hash_val="sha256abc", file_type=FileType.DOCUMENT
-    ):
+    def _run_and_capture_records(self, records, hash_val="sha256abc", file_type=FileType.DOCUMENT):
         """Run _process_directory and return the completed FileRecord objects."""
         completed = []
         original_model_copy = FileRecord.model_copy
@@ -826,9 +812,7 @@ class TestProcessDirectoryRecordCompleteness:
 
 class TestRun:
     def test_calls_load_with_config_path_from_args(self, monkeypatch):
-        monkeypatch.setattr(
-            sys, "argv", ["stratum", "--config_path", "/my/config.toml"]
-        )
+        monkeypatch.setattr(sys, "argv", ["stratum", "--config_path", "/my/config.toml"])
         mock_cfg = make_mock_config()
         with (
             patch("stratum.main.load", return_value=mock_cfg) as mock_load,

@@ -143,7 +143,9 @@ class TestMetadataOnlyBackendUpload:
     def setup_method(self):
         self.config = make_config()
         self.s3_client = MagicMock()
-        self.backend = MetadataOnlyBackend(config=self.config, scan_run_id=SCAN_RUN_ID, client=self.s3_client)
+        self.backend = MetadataOnlyBackend(
+            config=self.config, scan_run_id=SCAN_RUN_ID, client=self.s3_client
+        )
         self.record = make_complete_record()
 
     def _upload(self) -> UploadResult:
@@ -209,7 +211,9 @@ class TestMetadataOnlyBackendUpload:
 
 class TestEstimatedBytes:
     def setup_method(self):
-        self.backend = MetadataOnlyBackend(config=make_config(), scan_run_id=SCAN_RUN_ID, client=MagicMock())
+        self.backend = MetadataOnlyBackend(
+            config=make_config(), scan_run_id=SCAN_RUN_ID, client=MagicMock()
+        )
         self.record = make_complete_record()
 
     def test_returns_positive_integer(self):

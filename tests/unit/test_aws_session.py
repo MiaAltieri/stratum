@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock, patch
 
 from stratum.aws_session import S3ClientFactory
-
 from stratum.models import UploadConfig
 
 
