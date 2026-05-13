@@ -55,7 +55,7 @@ class TestGenerateUploadContent:
         self.record = make_complete_record()
 
     def _make_backend(self) -> MetadataOnlyBackend:
-        return MetadataOnlyBackend(config=self.config, scan_run_id=SCAN_RUN_ID)
+        return MetadataOnlyBackend(config=self.config, scan_run_id=SCAN_RUN_ID, client=MagicMock())
 
     def test_returns_bytes(self):
         with patch("stratum.backends.metadata_only._read_version", return_value=FAKE_VERSION):
@@ -142,9 +142,9 @@ class TestGenerateUploadContent:
 class TestMetadataOnlyBackendUpload:
     def setup_method(self):
         self.config = make_config()
-        self.backend = MetadataOnlyBackend(config=self.config, scan_run_id=SCAN_RUN_ID)
-        self.record = make_complete_record()
         self.s3_client = MagicMock()
+        self.backend = MetadataOnlyBackend(config=self.config, scan_run_id=SCAN_RUN_ID, client=self.s3_client)
+        self.record = make_complete_record()
 
     def _upload(self) -> UploadResult:
         with patch("stratum.backends.metadata_only._read_version", return_value=FAKE_VERSION):
@@ -170,28 +170,28 @@ class TestMetadataOnlyBackendUpload:
         result = self._upload()
         assert result.s3_key.endswith(".json")
 
-    def test_put_content_called_once(self):
+    def test_put_object_called_once(self):
         self._upload()
-        self.s3_client.put_content.assert_called_once()
+        self.s3_client.put_object.assert_called_once()
 
-    def test_put_content_receives_correct_bucket(self):
+    def test_put_object_receives_correct_bucket(self):
         self._upload()
-        _, kwargs = self.s3_client.put_content.call_args
+        _, kwargs = self.s3_client.put_object.call_args
         assert kwargs["Bucket"] == "test-bucket"
 
-    def test_put_content_content_type_is_application_json(self):
+    def test_put_object_content_type_is_application_json(self):
         self._upload()
-        _, kwargs = self.s3_client.put_content.call_args
+        _, kwargs = self.s3_client.put_object.call_args
         assert kwargs["ContentType"] == "json"
 
-    def test_put_content_body_is_bytes(self):
+    def test_put_object_body_is_bytes(self):
         self._upload()
-        _, kwargs = self.s3_client.put_content.call_args
+        _, kwargs = self.s3_client.put_object.call_args
         assert isinstance(kwargs["Body"], bytes)
 
-    def test_put_content_body_deserialises_to_dict(self):
+    def test_put_object_body_deserialises_to_dict(self):
         self._upload()
-        _, kwargs = self.s3_client.put_content.call_args
+        _, kwargs = self.s3_client.put_object.call_args
         assert isinstance(json.loads(kwargs["Body"]), dict)
 
     def test_incomplete_record_raises_before_s3_call(self):
@@ -199,7 +199,7 @@ class TestMetadataOnlyBackendUpload:
         with patch("stratum.backends.metadata_only._read_version", return_value=FAKE_VERSION):
             with pytest.raises(FileRecordNotProcessedException):
                 self.backend.upload(incomplete, self.s3_client)
-        self.s3_client.put_content.assert_not_called()
+        self.s3_client.put_object.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
@@ -209,7 +209,7 @@ class TestMetadataOnlyBackendUpload:
 
 class TestEstimatedBytes:
     def setup_method(self):
-        self.backend = MetadataOnlyBackend(config=make_config(), scan_run_id=SCAN_RUN_ID)
+        self.backend = MetadataOnlyBackend(config=make_config(), scan_run_id=SCAN_RUN_ID, client=MagicMock())
         self.record = make_complete_record()
 
     def test_returns_positive_integer(self):
