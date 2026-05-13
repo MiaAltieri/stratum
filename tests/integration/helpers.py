@@ -1,6 +1,7 @@
 """Shared utilities for Stratum integration tests."""
 
 import json
+import os
 from pathlib import Path
 
 import tomli_w
@@ -54,6 +55,12 @@ def make_stratum_config(
         },
         "suggestions": {
             "log_path": str(suggestions_dir),
+        },
+        "upload": {
+            "bucket": os.environ.get("STRATUM_TEST_BUCKET", ""),
+            "prefix": "stratum/",
+            "region": os.environ.get("STRATUM_TEST_REGION", "us-east-1"),
+            "profile": os.environ.get("STRATUM_TEST_PROFILE", "stratum"),
         },
     }
     toml_path.write_bytes(tomli_w.dumps(data).encode())
