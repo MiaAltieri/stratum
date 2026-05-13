@@ -61,6 +61,8 @@ class ScanMetadata(BaseModel):
     duplicates_found: int
     suggestions_written: int
     duration_seconds: int
+    uploads: int
+    failed_uploads: int
 
 
 class FileRecord(BaseModel):

@@ -79,10 +79,10 @@ class TestParseArgs:
         args = _parse_args()
         assert args.config_path == Path("/custom/config.toml")
 
-    def test_default_dry_run_is_true(self, monkeypatch):
+    def test_default_dry_run_is_False(self, monkeypatch):
         monkeypatch.setattr(sys, "argv", ["stratum"])
         args = _parse_args()
-        assert args.dry_run is True
+        assert args.dry_run is False
 
     def test_config_path_is_path_type(self, monkeypatch):
         monkeypatch.setattr(sys, "argv", ["stratum", "--config_path", "/some/path.toml"])
@@ -90,7 +90,7 @@ class TestParseArgs:
         assert isinstance(args.config_path, Path)
 
     def test_dry_run_explicit_true(self, monkeypatch):
-        monkeypatch.setattr(sys, "argv", ["stratum", "--dry_run", "True"])
+        monkeypatch.setattr(sys, "argv", ["stratum", "--dry_run"])
         args = _parse_args()
         # argparse type=bool: bool("True") == True
         assert args.dry_run is True
@@ -194,6 +194,8 @@ class TestProcessDirectoryEmptyScan:
     def _run_empty(self):
         cfg = make_mock_config()
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=[]),
             patch("stratum.main.StratumIndex", return_value=make_mock_index()),
             patch("stratum.main.SuggestionLogger", return_value=make_mock_logger()),
@@ -229,6 +231,8 @@ class TestProcessDirectoryCounts:
         cfg = make_mock_config()
         records = [make_file_record(path=Path(f"/dir/file_{i}.txt")) for i in range(4)]
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=records),
             patch("stratum.main.hash_file", return_value="h"),
             patch("stratum.main.classify", return_value=FileType.OTHER),
@@ -246,6 +250,8 @@ class TestProcessDirectoryCounts:
         cfg = make_mock_config()
         records = [make_file_record(path=Path(f"/dir/file_{i}.txt")) for i in range(3)]
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=records),
             patch("stratum.main.hash_file", return_value="h") as mock_hash,
             patch("stratum.main.classify", return_value=FileType.OTHER),
@@ -260,6 +266,8 @@ class TestProcessDirectoryCounts:
         cfg = make_mock_config()
         records = [make_file_record(path=Path(f"/dir/file_{i}.txt")) for i in range(2)]
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=records),
             patch("stratum.main.hash_file", return_value="h"),
             patch("stratum.main.classify", return_value=FileType.DOCUMENT) as mock_classify,
@@ -286,6 +294,8 @@ class TestProcessDirectoryDuplicateDetection:
         mock_log = make_mock_logger()
 
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=[record]),
             patch("stratum.main.hash_file", return_value="abc"),
             patch("stratum.main.classify", return_value=FileType.OTHER),
@@ -306,6 +316,8 @@ class TestProcessDirectoryDuplicateDetection:
         mock_log = make_mock_logger()
 
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=[record]),
             patch("stratum.main.hash_file", return_value="abc"),
             patch("stratum.main.classify", return_value=FileType.OTHER),
@@ -322,6 +334,8 @@ class TestProcessDirectoryDuplicateDetection:
         cfg = make_mock_config()
         record = make_file_record(path=Path("/dir/copy.txt"))
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=[record]),
             patch("stratum.main.hash_file", return_value="abc"),
             patch("stratum.main.classify", return_value=FileType.OTHER),
@@ -344,6 +358,8 @@ class TestProcessDirectoryDuplicateDetection:
         expected_path = Path("/dir/copy.txt")
         record = make_file_record(path=expected_path)
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=[record]),
             patch("stratum.main.hash_file", return_value="abc"),
             patch("stratum.main.classify", return_value=FileType.OTHER),
@@ -365,6 +381,8 @@ class TestProcessDirectoryDuplicateDetection:
         cfg = make_mock_config()
         record = make_file_record(path=Path("/dir/copy.txt"), size_bytes=8192)
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=[record]),
             patch("stratum.main.hash_file", return_value="abc"),
             patch("stratum.main.classify", return_value=FileType.OTHER),
@@ -387,6 +405,8 @@ class TestProcessDirectoryDuplicateDetection:
         original = "/dir/original.txt"
         record = make_file_record(path=Path("/dir/copy.txt"))
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=[record]),
             patch("stratum.main.hash_file", return_value="abc"),
             patch("stratum.main.classify", return_value=FileType.OTHER),
@@ -409,6 +429,8 @@ class TestProcessDirectoryDuplicateDetection:
         records = [make_file_record(path=Path(f"/dir/copy_{i}.txt")) for i in range(3)]
         mock_log = make_mock_logger()
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=records),
             patch("stratum.main.hash_file", return_value="same_hash"),
             patch("stratum.main.classify", return_value=FileType.OTHER),
@@ -428,6 +450,8 @@ class TestProcessDirectoryDuplicateDetection:
         cfg = make_mock_config()
         record = make_file_record(path=Path("/dir/copy.txt"))
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=[record]),
             patch("stratum.main.hash_file", return_value="abc"),
             patch("stratum.main.classify", return_value=FileType.OTHER),
@@ -458,6 +482,8 @@ class TestProcessDirectoryDryRun:
         mock_log = make_mock_logger()
 
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=[record]),
             patch("stratum.main.hash_file", return_value="abc"),
             patch("stratum.main.classify", return_value=FileType.OTHER),
@@ -475,6 +501,8 @@ class TestProcessDirectoryDryRun:
         cfg = make_mock_config()
         record = make_file_record(path=Path("/dir/copy.txt"))
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=[record]),
             patch("stratum.main.hash_file", return_value="abc"),
             patch("stratum.main.classify", return_value=FileType.OTHER),
@@ -495,6 +523,8 @@ class TestProcessDirectoryDryRun:
         mock_log = make_mock_logger()
 
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=[record]),
             patch("stratum.main.hash_file", return_value="abc"),
             patch("stratum.main.classify", return_value=FileType.OTHER),
@@ -512,6 +542,8 @@ class TestProcessDirectoryDryRun:
         cfg = make_mock_config()
         records = [make_file_record(path=Path(f"/dir/f{i}.txt")) for i in range(5)]
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=records),
             patch("stratum.main.hash_file", return_value="h"),
             patch("stratum.main.classify", return_value=FileType.OTHER),
@@ -694,7 +726,13 @@ class TestProcessDirectoryRecordCompleteness:
             return result
 
         cfg = make_mock_config()
+        # Raise from upload() so the bare except catches it and skips the
+        # second model_copy(update={"upload_result": ...}) call per record.
+        mock_backend = MagicMock()
+        mock_backend.return_value.upload.side_effect = Exception("upload mocked out")
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend", mock_backend),
             patch("stratum.main.scan", return_value=records),
             patch("stratum.main.hash_file", return_value=hash_val),
             patch("stratum.main.classify", return_value=file_type),
@@ -749,6 +787,8 @@ class TestProcessDirectoryRecordCompleteness:
 
         cfg = make_mock_config()
         with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
             patch("stratum.main.scan", return_value=[record]),
             patch("stratum.main.hash_file", return_value="abc"),
             patch("stratum.main.classify", return_value=FileType.OTHER),
@@ -803,7 +843,7 @@ class TestRun:
             run()
 
         dry_run_arg = mock_run.call_args[0][1]
-        assert dry_run_arg is True
+        assert dry_run_arg is False
 
     def test_default_config_path_passed_to_load(self, monkeypatch):
         monkeypatch.setattr(sys, "argv", ["stratum"])

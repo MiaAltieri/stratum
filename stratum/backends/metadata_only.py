@@ -10,9 +10,10 @@ BYTE_ESTIMATE = 1024
 
 
 class MetadataOnlyBackend:
-    def __init__(self, config: UploadConfig, scan_run_id: str) -> None:
+    def __init__(self, config: UploadConfig, scan_run_id: str, client) -> None:
         self.config = config
         self.scan_run_id = scan_run_id
+        self.s3_client = client
 
     def _generate_upload_content(self, record) -> bytes:
         content = {
@@ -53,11 +54,12 @@ class MetadataOnlyBackend:
         # NOTE the above approach goes against what is described in phase2. But this is the way
         # I decided to do this - because I don't want to abstract errors, this introduces
         # potentially difficult maintence
-        s3_client.put_content(
+        s3_client.put_object(
             Bucket=self.config.bucket,
             Key=s3_key,
             Body=upload_content,
             ContentType="json",
+            ServerSideEncryption="AES256",
         )
 
         return UploadResult(s3_key=s3_key, bytes_transferred=self.estimated_bytes(record))
