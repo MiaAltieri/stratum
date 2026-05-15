@@ -1,13 +1,19 @@
 """Unit tests for stratum.config — config loader and validation."""
 
 import textwrap
-import tomllib
 from pathlib import Path
 
 import pytest
+import tomllib
 from pydantic import ValidationError
 
-from stratum.config import PipelineConfig, ScanConfig, StratumConfig, SuggestionsConfig, load
+from stratum.config import (
+    PipelineConfig,
+    ScanConfig,
+    StratumConfig,
+    SuggestionsConfig,
+    load,
+)
 from stratum.exceptions import DirNotFoundException
 from stratum.models import UploadConfig, UploadMode
 
