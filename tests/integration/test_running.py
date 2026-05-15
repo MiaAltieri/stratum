@@ -1,21 +1,19 @@
 """Integration tests: process execution, PID lifecycle, and suggestion log output."""
 
 import os
-from pathlib import Path
 
 import pytest
 
-import stratum.main as _main_module
 from stratum.main import (
-    PID_FILE_NAME,
+    PID_PATH as _PID_PATH,
+)
+from stratum.main import (
     _delete_pid,
     _process_directory,
     _run_stratum,
     _write_pid,
 )
 from tests.integration.helpers import make_stratum_config, read_suggestions
-
-_PID_PATH = Path(_main_module.__file__).parent / PID_FILE_NAME
 
 
 @pytest.mark.integration

@@ -9,6 +9,7 @@ import pytest
 
 from stratum.main import (
     PID_FILE_NAME,
+    PID_PATH,
     _delete_pid,
     _parse_args,
     _process_directory,
@@ -16,7 +17,13 @@ from stratum.main import (
     _write_pid,
     run,
 )
-from stratum.models import FileRecord, FileType, ScanMetadata, SuggestionAction
+from stratum.models import (
+    FileRecord,
+    FileType,
+    ScanMetadata,
+    SuggestionAction,
+    UploadMode,
+)
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -107,7 +114,6 @@ class TestWritePid:
         with (
             patch("builtins.open", m),
             patch("stratum.main.os.getpid", return_value=99999),
-            patch.object(Path, "mkdir"),
         ):
             _write_pid()
         m().write.assert_called_once_with("99999")
@@ -117,7 +123,6 @@ class TestWritePid:
         with (
             patch("builtins.open", m),
             patch("stratum.main.os.getpid", return_value=1),
-            patch.object(Path, "mkdir"),
         ):
             _write_pid()
         assert m.call_args[0][1] == "w"
@@ -127,18 +132,21 @@ class TestWritePid:
         with (
             patch("builtins.open", m),
             patch("stratum.main.os.getpid", return_value=1),
-            patch.object(Path, "mkdir"),
         ):
             _write_pid()
         opened_path = m.call_args[0][0]
         assert opened_path.name == PID_FILE_NAME
+
+    def test_pid_file_path_is_in_tempdir(self):
+        import tempfile
+
+        assert PID_PATH.parent == Path(tempfile.gettempdir())
 
     def test_pid_written_as_string(self):
         m = mock_open()
         with (
             patch("builtins.open", m),
             patch("stratum.main.os.getpid", return_value=42),
-            patch.object(Path, "mkdir"),
         ):
             _write_pid()
         written = m().write.call_args[0][0]
@@ -468,6 +476,52 @@ class TestProcessDirectoryDuplicateDetection:
 
         entry = mock_log.suggest.call_args[0][0]
         assert entry.ts is not None
+
+
+# ---------------------------------------------------------------------------
+# _process_directory — bucket validation guard
+# ---------------------------------------------------------------------------
+
+
+def _make_config_with_upload(bucket: str, mode: UploadMode) -> MagicMock:
+    cfg = make_mock_config()
+    cfg.upload.bucket = bucket
+    cfg.upload.mode = mode
+    return cfg
+
+
+class TestProcessDirectoryBucketValidation:
+    def test_exits_when_bucket_empty_and_full_content_mode(self):
+        cfg = _make_config_with_upload(bucket="", mode=UploadMode.FULL_CONTENT)
+        with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
+            pytest.raises(SystemExit) as exc_info,
+        ):
+            _process_directory(cfg, dry_run=False)
+        assert exc_info.value.code == 1
+
+    def test_no_exit_when_bucket_set_and_metadata_only_mode(self):
+        cfg = _make_config_with_upload(bucket="my-bucket", mode=UploadMode.METADATA_ONLY)
+        with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
+            patch("stratum.main.scan", return_value=[]),
+            patch("stratum.main.StratumIndex", return_value=make_mock_index()),
+            patch("stratum.main.SuggestionLogger", return_value=make_mock_logger()),
+        ):
+            _process_directory(cfg, dry_run=False)  # must not raise
+
+    def test_no_exit_when_dry_run_even_with_empty_bucket(self):
+        cfg = _make_config_with_upload(bucket="", mode=UploadMode.METADATA_ONLY)
+        with (
+            patch("stratum.main.S3ClientFactory"),
+            patch("stratum.main.MetadataOnlyBackend"),
+            patch("stratum.main.scan", return_value=[]),
+            patch("stratum.main.StratumIndex", return_value=make_mock_index()),
+            patch("stratum.main.SuggestionLogger", return_value=make_mock_logger()),
+        ):
+            _process_directory(cfg, dry_run=True)  # must not raise
 
 
 # ---------------------------------------------------------------------------
