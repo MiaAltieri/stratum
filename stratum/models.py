@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, computed_field
+from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
 
 class FileType(StrEnum):
@@ -34,6 +34,27 @@ class UploadMode(StrEnum):
 
     METADATA_ONLY = "METADATA_ONLY"
     FULL_CONTENT = "FULL_CONTENT"  # forward-compatible; raises NotImplementedError in uploader
+
+
+class PipelineConfig(BaseModel):
+    """Controls the concurrency parameters for the Phase 3 upload pipeline."""
+
+    upload_workers: int = 8
+    queue_maxsize: int = 500
+
+    @field_validator("upload_workers", mode="after")
+    @classmethod
+    def validate_upload_workers(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError(f"upload_workers must be a positive integer, got {v}")
+        return v
+
+    @field_validator("queue_maxsize", mode="after")
+    @classmethod
+    def validate_queue_maxsize(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError(f"queue_maxsize must be a positive integer, got {v}")
+        return v
 
 
 class UploadConfig(BaseModel):

@@ -31,6 +31,13 @@ archive_days = 365
 # Emit REORGANIZE suggestions for misplaced files
 reorganize = true
 
+# ── Pipeline ──────────────────────────────────────────────────────────────────
+# Concurrency parameters. Defaults are suitable for most machines.
+#
+[pipeline]
+upload_workers = 8    # ThreadPoolExecutor threads for S3 uploads (min 1)
+queue_maxsize  = 500  # Back-pressure: scanner pauses when queue is full (min 1)
+
 # ── Upload ────────────────────────────────────────────────────────────────────
 # Uncomment and populate this section to enable S3 metadata upload.
 # Credentials are NOT configured here — use `aws configure --profile stratum`
