@@ -491,8 +491,8 @@ def _make_config_with_upload(bucket: str, mode: UploadMode) -> MagicMock:
 
 
 class TestProcessDirectoryBucketValidation:
-    def test_exits_when_bucket_empty_and_metadata_only_mode(self):
-        cfg = _make_config_with_upload(bucket="", mode=UploadMode.METADATA_ONLY)
+    def test_exits_when_bucket_empty_and_full_content_mode(self):
+        cfg = _make_config_with_upload(bucket="", mode=UploadMode.FULL_CONTENT)
         with (
             patch("stratum.main.S3ClientFactory"),
             patch("stratum.main.MetadataOnlyBackend"),

@@ -24,7 +24,7 @@ class SuggestionLogger:
             self._file_conn = (self.log_path / SUGGESTION_FILE_NAME).open("a", encoding="utf-8")
             return self
         except Exception as e:
-            logger.error("Exception with logger connection:", e)
+            logger.error("Exception with logger connection: %s", e)
             self.__exit__()
             raise
 
