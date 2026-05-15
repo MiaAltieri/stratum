@@ -61,12 +61,39 @@ class SuggestionsConfig(BaseModel):
     reorganize: bool = True
 
 
+class PipelineConfig(BaseModel):
+    "Controls the concurrency parameters."
+
+    upload_workers: int = 8
+    queue_maxsize: int = 500
+
+    @field_validator("upload_workers", mode="after")
+    @classmethod
+    def validate_upload_workers(cls, upload_workers: int):
+        if upload_workers < 0:
+            raise ValueError(
+                f"upload_workers must be a positive integer, got {upload_workers}"
+            )
+
+        return upload_workers
+
+    @field_validator("queue_maxsize", mode="after")
+    @classmethod
+    def validate_queue_maxsizee(cls, queue_maxsize: int):
+        if queue_maxsize < 0:
+            raise ValueError(
+                f"queue_maxsize must be a positive integer, got {queue_maxsize}"
+            )
+        return queue_maxsize
+
+
 class StratumConfig(BaseModel):
     """Top level config obeject."""
 
     scan: ScanConfig
     suggestions: SuggestionsConfig = SuggestionsConfig()
     upload: UploadConfig = UploadConfig()
+    pipeline_config: UploadConfig = PipelineConfig()
 
 
 def load(path: Path = Path("~/.stratum/stratum.toml")) -> StratumConfig:
