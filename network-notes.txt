@@ -1,0 +1,8 @@
+I did some manual testing when performing my stratu remost upload
+
+
+Doing 
+    poetry run stratum [args]
+    sudo iftop -i en0
+
+You can listen to the WiFi interface and actually watch the connection to AWS! how neat 
