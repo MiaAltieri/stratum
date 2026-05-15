@@ -113,7 +113,7 @@ def _process_directory(config, dry_run) -> ScanMetadata:
 
     # dont bother scanning if UploadConfig.bucket is empty and mode is METADATA_ONLY,
     # the orchestrator
-    if not dry_run and not upload_config.bucket and upload_config.mode == UploadMode.METADATA_ONLY:
+    if not dry_run and not upload_config.bucket and upload_config.mode != UploadMode.METADATA_ONLY:
         logger.error(
             "Cannot run, poorly formed arguments, bucket is empty but specified metadat only "
         )
