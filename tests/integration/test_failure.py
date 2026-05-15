@@ -15,12 +15,12 @@ from stratum.index import (
     PathRequiredToDeleteDBException,
     StratumIndex,
 )
-from stratum.main import PID_FILE_NAME, _process_directory, _run_stratum
+from stratum.main import PID_PATH as _PID_PATH
+from stratum.main import _process_directory, _run_stratum
 from stratum.suggestion_log import CalledOutsideContextManager, SuggestionLogger
 from tests.integration.helpers import CONTENT_A, make_stratum_config, write_file
 
 _DB_PATH = Path(_index_module.__file__).parent / "index.db"
-_PID_PATH = Path(_main_module.__file__).parent / PID_FILE_NAME
 
 
 @pytest.mark.integration

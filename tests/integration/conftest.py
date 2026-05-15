@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 import stratum.index as _index_module
-import stratum.main as _main_module
+from stratum.main import PID_PATH as _PID_PATH
 from tests.integration.helpers import (
     CONTENT_A,
     CONTENT_B,
@@ -21,7 +21,6 @@ from tests.integration.helpers import (
 )
 
 _DB_PATH = Path(_index_module.__file__).parent / "index.db"
-_PID_PATH = Path(_main_module.__file__).parent / "stratum.pid"
 
 
 @pytest.fixture(autouse=True)

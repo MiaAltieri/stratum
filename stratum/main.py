@@ -4,6 +4,7 @@ import argparse
 import logging
 import os
 import sys
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,6 +25,7 @@ from stratum.suggestion_log import SuggestionLogger
 from stratum.tagger import classify
 
 PID_FILE_NAME = "stratum.pid"
+PID_PATH = Path(tempfile.gettempdir()) / PID_FILE_NAME
 
 SCANNED = "files_scanned"
 DUPS_FOUND = "duplicates_found"
@@ -75,17 +77,13 @@ def _run_stratum(config, dry_run=bool) -> None:
 def _write_pid() -> None:
     # NOTE in the future we will want to think on how we can handle PID when we introduce
     # multithreading
-    pid_path = Path(__file__).parent / PID_FILE_NAME
-    pid_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(pid_path, "w") as f:
+    with open(PID_PATH, "w") as f:
         f.write(str(os.getpid()))
 
 
 def _delete_pid():
-    pid_path = Path(__file__).parent / PID_FILE_NAME
-    if os.path.exists(pid_path):
-        os.remove(pid_path)
+    if os.path.exists(PID_PATH):
+        os.remove(PID_PATH)
 
 
 def _process_directory(config, dry_run) -> ScanMetadata:
@@ -115,7 +113,7 @@ def _process_directory(config, dry_run) -> ScanMetadata:
 
     # dont bother scanning if UploadConfig.bucket is empty and mode is METADATA_ONLY,
     # the orchestrator
-    if not dry_run and not upload_config.bucket and upload_config.mode != UploadMode.METADATA_ONLY:
+    if not dry_run and not upload_config.bucket and upload_config.mode == UploadMode.METADATA_ONLY:
         logger.error(
             "Cannot run, poorly formed arguments, bucket is empty but specified metadat only "
         )
