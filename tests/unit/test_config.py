@@ -4,9 +4,16 @@ import textwrap
 from pathlib import Path
 
 import pytest
+import tomllib
 from pydantic import ValidationError
 
-from stratum.config import ScanConfig, StratumConfig, SuggestionsConfig, load
+from stratum.config import (
+    PipelineConfig,
+    ScanConfig,
+    StratumConfig,
+    SuggestionsConfig,
+    load,
+)
 from stratum.exceptions import DirNotFoundException
 from stratum.models import UploadConfig, UploadMode
 
@@ -111,6 +118,39 @@ class TestSuggestionsConfig:
 
 
 # ---------------------------------------------------------------------------
+# PipelineConfig
+# ---------------------------------------------------------------------------
+
+
+class TestPipelineConfig:
+    def test_defaults(self):
+        cfg = PipelineConfig()
+        assert cfg.upload_workers == 8
+        assert cfg.queue_maxsize == 500
+
+    def test_upload_workers_zero_raises(self):
+        with pytest.raises(ValidationError):
+            PipelineConfig(upload_workers=0)
+
+    def test_upload_workers_negative_raises(self):
+        with pytest.raises(ValidationError):
+            PipelineConfig(upload_workers=-1)
+
+    def test_queue_maxsize_zero_raises(self):
+        with pytest.raises(ValidationError):
+            PipelineConfig(queue_maxsize=0)
+
+    def test_queue_maxsize_negative_raises(self):
+        with pytest.raises(ValidationError):
+            PipelineConfig(queue_maxsize=-1)
+
+    def test_custom_values(self):
+        cfg = PipelineConfig(upload_workers=4, queue_maxsize=100)
+        assert cfg.upload_workers == 4
+        assert cfg.queue_maxsize == 100
+
+
+# ---------------------------------------------------------------------------
 # StratumConfig
 # ---------------------------------------------------------------------------
 
@@ -143,6 +183,14 @@ class TestStratumConfig:
         cfg = StratumConfig.model_validate({"scan": {"watch_dirs": [str(d)]}})
         assert cfg.upload.mode == UploadMode.METADATA_ONLY
         assert cfg.upload.prefix == "stratum/"
+
+    def test_pipeline_defaults_when_section_absent(self, tmp_path):
+        d = tmp_path / "d"
+        d.mkdir()
+        cfg = StratumConfig.model_validate({"scan": {"watch_dirs": [str(d)]}})
+        assert isinstance(cfg.pipeline, PipelineConfig)
+        assert cfg.pipeline.upload_workers == 8
+        assert cfg.pipeline.queue_maxsize == 500
 
 
 # ---------------------------------------------------------------------------
@@ -267,6 +315,46 @@ class TestLoad:
         )
         cfg = load(toml_path)
         assert isinstance(cfg.upload, UploadConfig)
+
+    def test_pipeline_section_loads_cleanly(self, tmp_path):
+        d = tmp_path / "d"
+        d.mkdir()
+        toml_path = write_toml(
+            tmp_path,
+            f"""
+            [scan]
+            watch_dirs = ["{d}"]
+
+            [pipeline]
+            upload_workers = 4
+            queue_maxsize  = 200
+            """,
+        )
+        cfg = load(toml_path)
+        assert cfg.pipeline.upload_workers == 4
+        assert cfg.pipeline.queue_maxsize == 200
+
+    def test_pipeline_section_absent_uses_defaults(self, tmp_path):
+        d = tmp_path / "d"
+        d.mkdir()
+        toml_path = write_toml(
+            tmp_path,
+            f"""
+            [scan]
+            watch_dirs = ["{d}"]
+            """,
+        )
+        cfg = load(toml_path)
+        assert isinstance(cfg.pipeline, PipelineConfig)
+        assert cfg.pipeline.upload_workers == 8
+        assert cfg.pipeline.queue_maxsize == 500
+
+    def test_example_toml_is_valid_toml(self):
+        example_path = Path(__file__).parents[2] / "config" / "stratum.toml.example"
+        with example_path.open("rb") as f:
+            data = tomllib.load(f)
+        assert "scan" in data
+        assert "pipeline" in data
 
 
 # ---------------------------------------------------------------------------

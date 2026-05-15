@@ -8,7 +8,7 @@ import tomllib
 from pydantic import BaseModel, field_validator
 
 from stratum.exceptions import DirNotFoundException
-from stratum.models import UploadConfig
+from stratum.models import PipelineConfig, UploadConfig
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +67,7 @@ class StratumConfig(BaseModel):
     scan: ScanConfig
     suggestions: SuggestionsConfig = SuggestionsConfig()
     upload: UploadConfig = UploadConfig()
+    pipeline: PipelineConfig = PipelineConfig()
 
 
 def load(path: Path = Path("~/.stratum/stratum.toml")) -> StratumConfig:
