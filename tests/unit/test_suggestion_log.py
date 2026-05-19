@@ -1,6 +1,7 @@
 """Unit tests for stratum.suggestion_log — JSONL suggestion logger (STRAT-108)."""
 
 import json
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -265,3 +266,33 @@ class TestForDuplicateFactory:
         restored = SuggestionEntry.model_validate_json(line)
         assert restored.action == SuggestionAction.DELETE_DUPLICATE
         assert restored.extra["original_path"] == str(original)
+
+
+# ---------------------------------------------------------------------------
+# Thread safety — concurrent suggest() calls (STRAT-303)
+# ---------------------------------------------------------------------------
+
+
+class TestConcurrentSuggest:
+    def test_concurrent_suggest_produces_no_interleaved_lines(self, tmp_path):
+        """20 threads × 50 suggest() calls must yield exactly 1000 valid JSONL lines."""
+        N_THREADS = 20
+        M_OPS = 50
+        barrier = threading.Barrier(N_THREADS)
+
+        def worker():
+            barrier.wait()
+            for _ in range(M_OPS):
+                sl.suggest(make_entry())
+
+        with SuggestionLogger(log_path=tmp_path) as sl:
+            threads = [threading.Thread(target=worker) for _ in range(N_THREADS)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+
+        lines = log_file(tmp_path).read_text(encoding="utf-8").splitlines()
+        assert len(lines) == N_THREADS * M_OPS
+        for line in lines:
+            json.loads(line)  # interleaved writes would produce invalid JSON

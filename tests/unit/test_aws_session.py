@@ -1,5 +1,6 @@
 """Unit tests for STRAT-203: AWS Session Factory."""
 
+import threading
 from unittest.mock import MagicMock, patch
 
 from stratum.aws_session import S3ClientFactory
@@ -35,10 +36,12 @@ class TestS3ClientFactoryConstruction:
         factory = S3ClientFactory(config)
         assert factory.config is config
 
-    def test_client_is_none_before_first_get(self):
+    def test_no_client_cached_before_first_get(self):
         config = make_config()
-        factory = S3ClientFactory(config)
-        assert factory.client is None
+        S3ClientFactory(config)
+        # _thread_local is class-level; construction must not pre-populate it
+        S3ClientFactory._thread_local.__dict__.pop("client", None)
+        assert not hasattr(S3ClientFactory._thread_local, "client")
 
 
 # ---------------------------------------------------------------------------
@@ -47,6 +50,9 @@ class TestS3ClientFactoryConstruction:
 
 
 class TestGetClient:
+    def setup_method(self):
+        S3ClientFactory._thread_local.__dict__.pop("client", None)
+
     def _make_factory(self, **kwargs) -> S3ClientFactory:
         return S3ClientFactory(make_config(**kwargs))
 
@@ -124,6 +130,9 @@ class TestGetClient:
 
 
 class TestReset:
+    def setup_method(self):
+        S3ClientFactory._thread_local.__dict__.pop("client", None)
+
     def _make_factory(self) -> S3ClientFactory:
         return S3ClientFactory(make_config())
 
@@ -133,7 +142,7 @@ class TestReset:
         with patch("stratum.aws_session.boto3.Session", return_value=mock_session):
             factory.get_client()
         factory.reset()
-        assert factory.client is None
+        assert not hasattr(S3ClientFactory._thread_local, "client")
 
     def test_get_client_after_reset_constructs_new_instance(self):
         factory = self._make_factory()
@@ -163,4 +172,79 @@ class TestReset:
     def test_reset_before_any_get_client_is_safe(self):
         factory = self._make_factory()
         factory.reset()  # should not raise
-        assert factory.client is None
+        assert not hasattr(S3ClientFactory._thread_local, "client")
+
+
+# ---------------------------------------------------------------------------
+# Thread safety — per-thread client isolation (STRAT-303)
+# ---------------------------------------------------------------------------
+
+
+class TestThreadLocalClients:
+    def test_get_client_returns_distinct_client_per_thread(self):
+        """get_client() from N concurrent threads must return N distinct objects."""
+        N = 4
+        factory = S3ClientFactory(make_config())
+        collected: list = []
+        collect_lock = threading.Lock()
+        barrier = threading.Barrier(N)
+        call_index = [0]
+        call_lock = threading.Lock()
+        mock_clients = [MagicMock(name=f"s3_client_{i}") for i in range(N)]
+
+        def make_session(*args, **kwargs):
+            sess = MagicMock()
+            with call_lock:
+                idx = call_index[0]
+                call_index[0] += 1
+            sess.client.return_value = mock_clients[idx]
+            return sess
+
+        def worker():
+            barrier.wait()
+            c = factory.get_client()
+            with collect_lock:
+                collected.append(c)
+
+        with patch("stratum.aws_session.boto3.Session", side_effect=make_session):
+            threads = [threading.Thread(target=worker) for _ in range(N)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+
+        assert len(collected) == N
+        assert len({id(c) for c in collected}) == N, "Each thread must get a distinct client"
+
+    def test_reset_in_one_thread_does_not_affect_cached_client_in_another(self):
+        """reset() clears only the calling thread's cache; other threads are unaffected."""
+        factory = S3ClientFactory(make_config())
+        mock_session = MagicMock()
+        barrier_both_cached = threading.Barrier(2)
+        barrier_a_reset = threading.Barrier(2)
+        client_before: list = [None]
+        client_after: list = [None]
+
+        def thread_a():
+            factory.get_client()
+            barrier_both_cached.wait()  # wait for B to cache its client
+            factory.reset()
+            barrier_a_reset.wait()  # signal B that A has reset
+
+        def thread_b():
+            client_before[0] = factory.get_client()
+            barrier_both_cached.wait()  # signal A that B has cached
+            barrier_a_reset.wait()  # wait for A to reset
+            client_after[0] = factory.get_client()
+
+        with patch("stratum.aws_session.boto3.Session", return_value=mock_session):
+            ta = threading.Thread(target=thread_a)
+            tb = threading.Thread(target=thread_b)
+            ta.start()
+            tb.start()
+            ta.join()
+            tb.join()
+
+        assert client_before[0] is client_after[0], (
+            "Thread B's client must survive thread A's reset"
+        )

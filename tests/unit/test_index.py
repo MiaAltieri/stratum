@@ -1,5 +1,6 @@
 """Unit tests for stratum.index — SQLite dedup index (STRAT-107)."""
 
+import threading
 from pathlib import Path
 
 import pytest
@@ -280,3 +281,62 @@ class TestDelDbWrongPath:
             except DeletionPathIncorrectException:
                 pass
         assert db.exists()
+
+
+# ---------------------------------------------------------------------------
+# WAL journal mode (STRAT-303)
+# ---------------------------------------------------------------------------
+
+
+class TestWALMode:
+    def test_wal_journal_mode_is_active_on_connect(self, tmp_path):
+        """WAL must be enabled on every connection open — verified via PRAGMA."""
+        db = tmp_path / "index.db"
+        with StratumIndex(db_path=db) as idx:
+            result = idx._conn.execute("PRAGMA journal_mode").fetchone()
+        assert result[0] == "wal"
+
+
+# ---------------------------------------------------------------------------
+# Thread safety — concurrent insert() calls (STRAT-303)
+# ---------------------------------------------------------------------------
+
+
+class TestConcurrentInsert:
+    def test_concurrent_insert_produces_correct_row_count(self, tmp_path):
+        """20 threads each inserting a unique hash must yield exactly 20 rows.
+
+        Each thread opens its own StratumIndex (per-thread connection). WAL allows
+        concurrent writers across separate connections without blocking.
+        """
+        N_THREADS = 20
+        hashes = [f"{i:064d}" for i in range(N_THREADS)]
+        barrier = threading.Barrier(N_THREADS)
+        errors: list[Exception] = []
+        errors_lock = threading.Lock()
+        db = tmp_path / "index.db"
+
+        # Initialise the schema before workers start.
+        with StratumIndex(db_path=db):
+            pass
+
+        def worker(h: str) -> None:
+            barrier.wait()
+            try:
+                with StratumIndex(db_path=db) as idx:
+                    idx.insert(h, Path(f"/file_{h[:8]}.txt"))
+            except Exception as exc:
+                with errors_lock:
+                    errors.append(exc)
+
+        threads = [threading.Thread(target=worker, args=(hashes[i],)) for i in range(N_THREADS)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert not errors, f"Worker exceptions raised: {errors}"
+
+        with StratumIndex(db_path=db) as idx:
+            row_count = idx._conn.execute("SELECT COUNT(*) FROM hashes").fetchone()[0]
+        assert row_count == N_THREADS

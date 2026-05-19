@@ -1,6 +1,7 @@
 """Suggestion logger — appends advisory SuggestionEntry records to a JSONL file."""
 
 import logging
+import threading
 from pathlib import Path
 
 from stratum.models import SuggestionEntry
@@ -11,6 +12,10 @@ SUGGESTION_FILE_NAME = "suggestions.jsonl"
 
 class CalledOutsideContextManager(RuntimeError):
     """Raised when SuggestionLogger methods are called outside a `with` block."""
+
+
+# define one lock at the module level
+_suggestion_log_lock = threading.Lock()
 
 
 class SuggestionLogger:
@@ -34,10 +39,17 @@ class SuggestionLogger:
             self._file_conn = None
 
     def suggest(self, entry: SuggestionEntry) -> None:
-        """Append *entry* as a single JSON line."""
+        """Append *entry* as a single JSON line.
+
+        We protect the file for multithreading with a lock which is acquired for the duration of
+        write + flush as a single atomic operation.
+        """
+
         if not self._file_conn:
             raise CalledOutsideContextManager(
                 "SuggestionLogger.suggest() must be called inside a `with` block."
             )
-        self._file_conn.write(entry.model_dump_json() + "\n")
-        self._file_conn.flush()
+
+        with _suggestion_log_lock:
+            self._file_conn.write(entry.model_dump_json() + "\n")
+            self._file_conn.flush()
