@@ -13,8 +13,8 @@ class S3ClientFactory:
     reset() clears the cache for the calling thread only.
     """
 
-    # It's the opposite of a lock. A lock says "only one thread touches this shared thing at a time."
-    # threading.local() says "there is no shared thing — everyone gets their own.
+    # It's the opposite of a lock. A lock says "only one thread touches this shared thing at a
+    #  time. threading.local() says "there is no shared thing — everyone gets their own.
     _thread_local = threading.local()
 
     def __init__(self, config: UploadConfig):
