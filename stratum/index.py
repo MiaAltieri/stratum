@@ -49,7 +49,14 @@ class StratumIndex:
 
     def __enter__(self) -> "StratumIndex":
         try:
+            # With the default journal mode, multiple threads hammering the same SQLite file
+            # will get a lot of "database is locked" errors. WAL mode significantly reduces that
+            # WAL journal mode
+            # WAL mode persists in the database file itself, so you only need to set it once — but setting it on every connect is
+            # harmless and ensures it's always active. Place it before any other operations so all subsequent reads/writes use WAL
+            # from the start.
             self._conn = sqlite3.connect(self._path, check_same_thread=False)
+            self._conn.execute("PRAGMA journal_mode=WAL")
             self._conn.execute(_DDL)
             self._conn.commit()
             return self

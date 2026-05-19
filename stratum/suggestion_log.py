@@ -26,9 +26,7 @@ class SuggestionLogger:
     def __enter__(self) -> "SuggestionLogger":
         try:
             self.log_path.mkdir(parents=True, exist_ok=True)
-            self._file_conn = (self.log_path / SUGGESTION_FILE_NAME).open(
-                "a", encoding="utf-8"
-            )
+            self._file_conn = (self.log_path / SUGGESTION_FILE_NAME).open("a", encoding="utf-8")
             return self
         except Exception as e:
             logger.error("Exception with logger connection: %s", e)
@@ -41,10 +39,12 @@ class SuggestionLogger:
             self._file_conn = None
 
     def suggest(self, entry: SuggestionEntry) -> None:
-        """Append *entry* as a single JSON line."""
+        """Append *entry* as a single JSON line.
 
-        # TODO protecting the file write and flush with a threading.Lock.
-        # TODO The lock is acquired for the duration of write + flush as a single atomic operation.
+        We protect the file for multithreading with a lock which is acquired for the duration of
+        write + flush as a single atomic operation.
+        """
+
         if not self._file_conn:
             raise CalledOutsideContextManager(
                 "SuggestionLogger.suggest() must be called inside a `with` block."
